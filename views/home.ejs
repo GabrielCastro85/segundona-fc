@@ -97,9 +97,9 @@
         <span class="quick-stat__sub">Futebol raiz, estatísticas e resenha</span>
       </article>
       <article class="quick-stat">
-        <span class="quick-stat__label">Canal oficial</span>
-        <strong class="quick-stat__value"><%= brand.instagramLabel || "@segundonafc" %></strong>
-        <span class="quick-stat__sub">Instagram, updates e artes da semana</span>
+        <span class="quick-stat__label">Registro oficial</span>
+        <strong class="quick-stat__value"><%= brand.shortName || "Segundona" %></strong>
+        <span class="quick-stat__sub">Rankings, votações e artes da semana</span>
       </article>
     </div>
   </header>
@@ -219,14 +219,6 @@
             class="inline-flex items-center gap-2 rounded-full border border-horriver-border bg-black/25 px-4 py-2 text-sm font-semibold text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
           >
             Ler mais
-          </a>
-          <a
-            href="<%= brand.instagramUrl || '#' %>"
-            target="_blank"
-            rel="noopener"
-            class="inline-flex items-center gap-2 rounded-full bg-horriver-orange px-4 py-2 text-sm font-semibold text-black hover:bg-orange-500 transition"
-          >
-            Instagram oficial
           </a>
         </div>
       </div>

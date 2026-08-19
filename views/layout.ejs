@@ -9,8 +9,9 @@
       shortName: "Segundona",
       tagline: "Futebol - Resenha - Cerveja",
       description: "Site oficial da Segundona FC com rankings, estatisticas, votacoes, financeiro e imagens para compartilhar.",
-      instagramLabel: "@segundonafc",
+      instagramLabel: "",
       instagramUrl: "",
+      hasInstagram: false,
       logo: "/img/logo-128x128.png",
       logoSmall: "/img/logo-32x32.png",
       logoLarge: "/img/logo-512x512.png",
@@ -891,36 +892,38 @@
                 Olá, <span class="text-horriver-light font-semibold"><%= adminLabel %></span>
               </span>
             <% } %>
-            <a
-              href="<%= siteBrand.instagramUrl || '#' %>"
-              target="_blank"
-              rel="noopener"
-              class="group inline-flex items-center gap-2 px-3 py-1 rounded-full border border-horriver-orange/80
-                     bg-black/40 text-[11px] md:text-xs text-horriver-orange
-                     hover:bg-horriver-orange hover:text-horriver-bg
-                     transition-colors"
-            >
-              <span
-                class="inline-flex items-center justify-center w-5 h-5 rounded-md
-                       bg-gradient-to-tr from-horriver-red via-horriver-orange to-yellow-300
-                       text-[10px] text-black shadow-sm"
+            <% if (siteBrand.hasInstagram) { %>
+              <a
+                href="<%= siteBrand.instagramUrl %>"
+                target="_blank"
+                rel="noopener"
+                class="group inline-flex items-center gap-2 px-3 py-1 rounded-full border border-horriver-orange/80
+                       bg-black/40 text-[11px] md:text-xs text-horriver-orange
+                       hover:bg-horriver-orange hover:text-horriver-bg
+                       transition-colors"
               >
-                <svg viewBox="0 0 24 24" aria-hidden="true" class="w-3.5 h-3.5">
-                  <rect
-                    x="3" y="3" width="18" height="18" rx="5" ry="5"
-                    fill="none" stroke="currentColor" stroke-width="1.6"
-                  ></rect>
-                  <circle
-                    cx="12" cy="12" r="4"
-                    fill="none" stroke="currentColor" stroke-width="1.6"
-                  ></circle>
-                  <circle cx="17" cy="7" r="1.1" fill="currentColor"></circle>
-                </svg>
-              </span>
+                <span
+                  class="inline-flex items-center justify-center w-5 h-5 rounded-md
+                         bg-gradient-to-tr from-horriver-red via-horriver-orange to-yellow-300
+                         text-[10px] text-black shadow-sm"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true" class="w-3.5 h-3.5">
+                    <rect
+                      x="3" y="3" width="18" height="18" rx="5" ry="5"
+                      fill="none" stroke="currentColor" stroke-width="1.6"
+                    ></rect>
+                    <circle
+                      cx="12" cy="12" r="4"
+                      fill="none" stroke="currentColor" stroke-width="1.6"
+                    ></circle>
+                    <circle cx="17" cy="7" r="1.1" fill="currentColor"></circle>
+                  </svg>
+                </span>
 
-              <span class="hidden sm:inline"><%= siteBrand.instagramLabel %></span>
-              <span class="sm:hidden">Instagram</span>
-            </a>
+                <span class="hidden sm:inline"><%= siteBrand.instagramLabel %></span>
+                <span class="sm:hidden">Instagram</span>
+              </a>
+            <% } %>
 
             <% if (!isAdmin) { %>
               <a
@@ -1082,31 +1085,6 @@
               <% } %>
               <% if (!isAdmin) { %>
                 <a
-                  href="<%= siteBrand.instagramUrl || '#' %>"
-                  target="_blank"
-                  rel="noopener"
-                  class="mobile-menu-action mobile-menu-action--accent"
-                >
-                  <span
-                    class="inline-flex items-center justify-center w-5 h-5 rounded-md
-                           bg-gradient-to-tr from-horriver-red via-horriver-orange to-yellow-300
-                           text-[10px] text-black"
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true" class="w-3.5 h-3.5">
-                      <rect
-                        x="3" y="3" width="18" height="18" rx="5" ry="5"
-                        fill="none" stroke="currentColor" stroke-width="1.6"
-                      ></rect>
-                      <circle
-                        cx="12" cy="12" r="4"
-                        fill="none" stroke="currentColor" stroke-width="1.6"
-                      ></circle>
-                      <circle cx="17" cy="7" r="1.1" fill="currentColor"></circle>
-                    </svg>
-                  </span>
-                  <span>Instagram</span>
-                </a>
-                <a
                   href="/login"
                   class="mobile-menu-action"
                 >
@@ -1127,31 +1105,6 @@
                     Sair
                   </button>
                 </form>
-                <a
-                  href="<%= siteBrand.instagramUrl || '#' %>"
-                  target="_blank"
-                  rel="noopener"
-                  class="mobile-menu-action mobile-menu-action--accent col-span-2"
-                >
-                  <span
-                    class="inline-flex items-center justify-center w-5 h-5 rounded-md
-                           bg-gradient-to-tr from-horriver-red via-horriver-orange to-yellow-300
-                           text-[10px] text-black"
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true" class="w-3.5 h-3.5">
-                      <rect
-                        x="3" y="3" width="18" height="18" rx="5" ry="5"
-                        fill="none" stroke="currentColor" stroke-width="1.6"
-                      ></rect>
-                      <circle
-                        cx="12" cy="12" r="4"
-                        fill="none" stroke="currentColor" stroke-width="1.6"
-                      ></circle>
-                      <circle cx="17" cy="7" r="1.1" fill="currentColor"></circle>
-                    </svg>
-                  </span>
-                  <span>Instagram</span>
-                </a>
               <% } %>
             </div>
           </nav>

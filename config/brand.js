@@ -19,7 +19,7 @@ const brand = {
   description:
     env.SITE_DESCRIPTION ||
     "Site oficial da Segundona FC com rankings, estatisticas, votacoes, financeiro e imagens para compartilhar.",
-  instagramHandle: cleanHandle(env.SITE_INSTAGRAM || "@segundonafc"),
+  instagramHandle: cleanHandle(env.SITE_INSTAGRAM || ""),
   instagramUrl: env.SITE_INSTAGRAM_URL || "",
   logo: cleanPath(env.SITE_LOGO_PATH, "/img/logo-128x128.png"),
   logoSmall: cleanPath(env.SITE_LOGO_SMALL_PATH, "/img/logo-32x32.png"),
@@ -33,6 +33,7 @@ const brand = {
   },
 };
 
-brand.instagramLabel = brand.instagramHandle || "Instagram";
+brand.hasInstagram = Boolean(brand.instagramHandle && brand.instagramUrl);
+brand.instagramLabel = brand.instagramHandle;
 
 module.exports = brand;
