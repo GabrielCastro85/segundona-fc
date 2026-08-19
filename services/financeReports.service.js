@@ -35,7 +35,7 @@ const {
 } = require("./financeAutomation.service");
 const { getFinanceReportHistory } = require("./financeEventLog.service");
 
-const FINANCE_REPORT_LOGO_PATH = path.resolve(__dirname, "..", "public", "img", "logo-512x512.svg");
+const FINANCE_REPORT_LOGO_PATH = path.resolve(__dirname, "..", "public", "img", "logo-512x512.png");
 let financeReportLogoDataUriPromise = null;
 
 async function getFinanceReportLogoDataUri() {

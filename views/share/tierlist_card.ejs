@@ -12,7 +12,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=720" />
-  <title>Tierlist <%= brand.name || "Nome da Pelada" %></title>
+  <title>Tierlist <%= brand.name || "Segundona FC" %></title>
   <style>
     <%- fontCss || "" %>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -30,10 +30,10 @@
       border-radius: 34px;
       overflow: hidden;
       background:
-        radial-gradient(circle at 18% -8%, rgba(139, 19, 32, 0.42), transparent 34%),
-        radial-gradient(circle at 88% 10%, rgba(255, 122, 26, 0.12), transparent 28%),
+        radial-gradient(circle at 18% -8%, rgba(11, 107, 42, 0.42), transparent 34%),
+        radial-gradient(circle at 88% 10%, rgba(245, 178, 27, 0.12), transparent 28%),
         linear-gradient(180deg, #260308 0%, #0b070d 48%, #050509 100%);
-      border: 1px solid rgba(255, 122, 26, 0.28);
+      border: 1px solid rgba(245, 178, 27, 0.28);
     }
     .tl-header {
       display: flex;
@@ -61,7 +61,7 @@
       width: 56px;
       height: 56px;
       border-radius: 999px;
-      border: 2px solid rgba(255, 122, 26, 0.9);
+      border: 2px solid rgba(245, 178, 27, 0.9);
       object-fit: cover;
     }
     .tl-rows {
@@ -134,10 +134,10 @@
   <main class="tl-card">
     <header class="tl-header">
       <div>
-        <div class="tl-brand"><%= esc(brand.name || "Nome da Pelada") %></div>
-        <h1 class="tl-title"><%= esc(title || `Tierlist ${brand.name || "Nome da Pelada"}`) %></h1>
+        <div class="tl-brand"><%= esc(brand.name || "Segundona FC") %></div>
+        <h1 class="tl-title"><%= esc(title || `Tierlist ${brand.name || "Segundona FC"}`) %></h1>
       </div>
-      <img class="tl-logo" src="<%= logoUrl || `${cleanBaseUrl}${brand.logo || '/img/logo-128x128.svg'}` %>" alt="<%= esc(brand.name || 'Nome da Pelada') %>" />
+      <img class="tl-logo" src="<%= logoUrl || `${cleanBaseUrl}${brand.logo || '/img/logo-128x128.png'}` %>" alt="<%= esc(brand.name || 'Segundona FC') %>" />
     </header>
 
     <section class="tl-rows">
@@ -147,7 +147,7 @@
           <div class="tl-players">
             <% (tier.players || []).forEach((player) => { %>
               <div class="tl-player">
-                <img src="<%= esc(player.photoUrl || `${cleanBaseUrl}/img/logo-32x32.svg`) %>" alt="" />
+                <img src="<%= esc(player.photoUrl || `${cleanBaseUrl}/img/logo-32x32.png`) %>" alt="" />
                 <span><%= esc(player.name || "Jogador") %></span>
               </div>
             <% }); %>
@@ -157,8 +157,8 @@
     </section>
 
     <footer class="tl-footer">
-      <span><%= esc(brand.url || "site-da-pelada.com") %></span>
-      <span><%= esc(brand.instagramLabel || "@sua_pelada") %></span>
+      <span><%= esc(brand.url || "segundona-fc.com") %></span>
+      <span><%= esc(brand.instagramLabel || "@segundonafc") %></span>
     </footer>
   </main>
 </body>

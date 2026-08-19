@@ -27,8 +27,8 @@
             <li id="<%= player.id %>" data-id="<%= player.id %>" class="p-3 bg-horriver-dark rounded-md cursor-grab flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
               <div class="flex items-center gap-3 min-w-0">
                 <img
-                  src="<%= thumbUrl(player.photoUrl || '/img/logo-128x128.svg', 80) %>"
-                  srcset="<%= thumbUrl(player.photoUrl || '/img/logo-128x128.svg', 80) %> 1x, <%= thumbUrl(player.photoUrl || '/img/logo-128x128.svg', 160) %> 2x"
+                  src="<%= thumbUrl(player.photoUrl || '/img/logo-128x128.png', 80) %>"
+                  srcset="<%= thumbUrl(player.photoUrl || '/img/logo-128x128.png', 80) %> 1x, <%= thumbUrl(player.photoUrl || '/img/logo-128x128.png', 160) %> 2x"
                   sizes="40px"
                   class="w-10 h-10 rounded-full object-cover"
                   alt="<%= player.name %>"

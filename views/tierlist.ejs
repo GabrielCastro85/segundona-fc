@@ -19,7 +19,7 @@
       <input
         type="text"
         id="tierTitle"
-        value="Tierlist <%= brand.name || 'Nome da Pelada' %>"
+        value="Tierlist <%= brand.name || 'Segundona FC' %>"
         class="mt-1 w-full rounded-xl bg-black/40 border border-horriver-border px-4 py-2 text-horriver-light"
       />
     </label>
@@ -44,10 +44,10 @@
   <div id="tier-board" class="space-y-3" data-export-root>
     <div class="tier-export-header export-only">
       <div class="tier-export-title">
-        <span class="tier-export-title-text"><%= (brand.name || "Nome da Pelada").toUpperCase() %> - TIER LIST</span>
+        <span class="tier-export-title-text"><%= (brand.name || "Segundona FC").toUpperCase() %> - TIER LIST</span>
       </div>
       <div class="tier-export-logo">
-        <img src="<%= brand.logo || '/img/logo-128x128.svg' %>" alt="<%= brand.name || 'Nome da Pelada' %>" />
+        <img src="<%= brand.logo || '/img/logo-128x128.png' %>" alt="<%= brand.name || 'Segundona FC' %>" />
       </div>
     </div>
 
@@ -62,7 +62,7 @@
     </section>
 
     <div class="tier-export-footer export-only">
-      <%= brand.instagramLabel || "@sua_pelada" %>
+      <%= brand.instagramLabel || "@segundonafc" %>
     </div>
   </div>
 </section>
@@ -313,7 +313,7 @@
           id: p.id,
           name: p.name,
           nickname: p.nickname,
-          avatar: thumbUrl(p.photoUrl || "/img/logo-128x128.svg", 48),
+          avatar: thumbUrl(p.photoUrl || "/img/logo-128x128.png", 48),
         }))
       ) %>;
 
@@ -470,7 +470,7 @@
                 : {}),
             },
             body: JSON.stringify({
-              title: titleInput.value || <%- JSON.stringify(`Tierlist ${brand.name || "Nome da Pelada"}`) %>,
+              title: titleInput.value || <%- JSON.stringify(`Tierlist ${brand.name || "Segundona FC"}`) %>,
               tiers,
               format: "feed",
             }),

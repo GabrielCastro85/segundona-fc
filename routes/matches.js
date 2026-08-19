@@ -99,12 +99,12 @@ router.get("/:id", async (req, res) => {
     }
     const baseUrl = process.env.SITE_URL || `${req.protocol}://${req.get("host")}`;
     const matchDateLabel = formatDateBR(match.playedAt);
-    const shareImagePath = weeklyPhoto?.teamPhotoUrl || (res.locals.brand?.logoLarge || "/img/logo-512x512.svg");
+    const shareImagePath = weeklyPhoto?.teamPhotoUrl || (res.locals.brand?.logoLarge || "/img/logo-512x512.png");
     res.locals.metaDescription = match.description
       ? `Pelada em ${matchDateLabel}. ${match.description}`
       : `Pelada em ${matchDateLabel}.`;
     res.locals.metaImage = `${baseUrl}${req.app.locals.thumbUrl(shareImagePath, 1200)}`;
-    res.locals.ogTitle = `Pelada ${matchDateLabel} | ${res.locals.brand?.name || "Nome da Pelada"}`;
+    res.locals.ogTitle = `Pelada ${matchDateLabel} | ${res.locals.brand?.name || "Segundona FC"}`;
 
     return res.render("match_public", {
       title: "Estatísticas da pelada",

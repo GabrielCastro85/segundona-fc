@@ -5,9 +5,9 @@ const PRECACHE = [
   "/css/custom.css",
   "/css/theme.css",
   "/js/site.js",
-  "/img/logo-192x192.svg",
-  "/img/logo-512x512.svg",
-  "/img/logo-128x128.svg",
+  "/img/logo-192x192.png",
+  "/img/logo-512x512.png",
+  "/img/logo-128x128.png",
 ];
 
 self.addEventListener("install", (e) => {

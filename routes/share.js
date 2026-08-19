@@ -489,7 +489,7 @@ router.get("/monthly-craque.png", (req, res) => {
 // ── Lineup card templates ───────────────────────────────────────────────────
 const LINEUP_TEMPLATE = path.join(__dirname, "../views/share/lineup_card.ejs");
 const TIERLIST_TEMPLATE = path.join(__dirname, "../views/share/tierlist_card.ejs");
-const LINEUP_LOGO_SOURCE = path.join(__dirname, "../public/img/logo-512x512.svg");
+const LINEUP_LOGO_SOURCE = path.join(__dirname, "../public/img/logo-512x512.png");
 const LINEUP_FONT_FILES = [
   { family: "Bebas Neue", weight: "400", filename: "BebasNeue-Regular.ttf" },
   { family: "Manrope", weight: "400", filename: "Manrope-Regular.ttf" },

@@ -613,7 +613,7 @@ router.get("/", async (req, res) => {
       selPosition,
       currentYear,
       metaDescription,
-      ogTitle: `Rankings ${periodLabel} | ${res.locals.brand?.name || "Nome da Pelada"}`,
+      ogTitle: `Rankings ${periodLabel} | ${res.locals.brand?.name || "Segundona FC"}`,
     };
 
     setCache(cacheKey, payload);

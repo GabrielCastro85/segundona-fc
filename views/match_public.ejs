@@ -54,15 +54,15 @@
       border: 1px solid rgba(148, 163, 184, 0.22);
       border-radius: 1.5rem;
       background:
-        radial-gradient(circle at top left, rgba(255, 122, 26, 0.18), transparent 38%),
-        radial-gradient(circle at bottom right, rgba(139, 19, 32, 0.22), transparent 42%),
+        radial-gradient(circle at top left, rgba(245, 178, 27, 0.18), transparent 38%),
+        radial-gradient(circle at bottom right, rgba(11, 107, 42, 0.22), transparent 42%),
         linear-gradient(135deg, rgba(9, 9, 13, 0.98), rgba(5, 5, 9, 0.92));
       box-shadow: 0 20px 48px rgba(0, 0, 0, 0.34);
     }
     .match-center-kicker {
       display: inline-flex;
       width: fit-content;
-      border: 1px solid rgba(255, 122, 26, 0.28);
+      border: 1px solid rgba(245, 178, 27, 0.28);
       border-radius: 999px;
       background: rgba(0, 0, 0, 0.35);
       padding: 0.35rem 0.7rem;
@@ -115,9 +115,9 @@
       overflow-wrap: anywhere;
     }
     .match-vote-note {
-      border: 1px solid rgba(255, 122, 26, 0.24);
+      border: 1px solid rgba(245, 178, 27, 0.24);
       border-radius: 1rem;
-      background: rgba(255, 122, 26, 0.08);
+      background: rgba(245, 178, 27, 0.08);
       padding: 0.8rem 0.95rem;
       color: rgba(245, 245, 245, 0.86);
       font-size: 0.78rem;
@@ -160,7 +160,7 @@
         width: 2rem;
         height: 2rem;
         border-radius: 999px;
-        background: rgba(255, 122, 26, 0.14) !important;
+        background: rgba(245, 178, 27, 0.14) !important;
         color: #fff7f2;
         font-weight: 800;
       }
@@ -171,9 +171,9 @@
       .match-stats-table td:nth-child(3) {
         justify-self: end;
         align-self: start;
-        border: 1px solid rgba(255, 122, 26, 0.28);
+        border: 1px solid rgba(245, 178, 27, 0.28);
         border-radius: 999px;
-        background: rgba(255, 122, 26, 0.08) !important;
+        background: rgba(245, 178, 27, 0.08) !important;
         padding: 0.25rem 0.45rem !important;
         line-height: 1;
       }
@@ -360,7 +360,7 @@
     <style>
       .tournament-export {
         background: linear-gradient(180deg, #0f1115 0%, #050608 100%);
-        border: 1px solid rgba(255, 122, 26, 0.2);
+        border: 1px solid rgba(245, 178, 27, 0.2);
         border-radius: 24px;
         padding: 28px 32px;
         color: #f1f5f9;
@@ -410,7 +410,7 @@
         width: 48px;
         height: 48px;
         border-radius: 50%;
-        border: 2px solid rgba(255, 122, 26, 0.6);
+        border: 2px solid rgba(245, 178, 27, 0.6);
         background: #0b0c0f;
         display: grid;
         place-items: center;
@@ -449,7 +449,7 @@
       body.is-exporting .tournament-export .score {
         font-size: 18px;
         font-weight: 700;
-        color: #ff7a1a;
+        color: #f5b21b;
       }
       /* --- Bracket --- */
       .trn-bracket { overflow-x: auto; padding-bottom: 4px; }
@@ -460,22 +460,22 @@
       .trn-games-col { display: flex; flex-direction: column; gap: 20px; }
       .trn-col--final { align-self: center; }
       .trn-game-card { border: 1px solid rgba(148,163,184,0.2); border-radius: 12px; overflow: hidden; background: rgba(0,0,0,0.35); width: 260px; }
-      .trn-game-card--final { border-color: rgba(255,122,26,0.45); background: rgba(255,122,26,0.04); width: 280px; }
+      .trn-game-card--final { border-color: rgba(245, 178, 27,0.45); background: rgba(245, 178, 27,0.04); width: 280px; }
       .trn-team { display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; gap: 10px; }
       .trn-team + .trn-team { border-top: 1px solid rgba(148,163,184,0.1); }
-      .trn-team--winner { background: rgba(255,122,26,0.08); }
+      .trn-team--winner { background: rgba(245, 178, 27,0.08); }
       .trn-team-name { font-size: 12px; color: rgba(178,184,194,0.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 190px; }
       .trn-team--winner .trn-team-name { color: #f5f5f5; font-weight: 600; }
       .trn-score { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: rgba(148,163,184,0.45); min-width: 24px; text-align: right; line-height: 1; }
-      .trn-team--winner .trn-score { color: #ff7a1a; }
+      .trn-team--winner .trn-score { color: #f5b21b; }
       .trn-score-pending { font-size: 14px; color: rgba(148,163,184,0.3); }
       .trn-penalty-note { padding: 4px 14px 7px; font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(148,163,184,0.4); }
       .trn-bracket-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: rgba(178,184,194,0.5); margin-bottom: 10px; white-space: nowrap; }
       .trn-connector { display: flex; flex-direction: column; align-self: stretch; width: 28px; flex-shrink: 0; }
-      .trn-connector-top { flex: 1; border-right: 1.5px solid rgba(255,122,26,0.3); border-bottom: 1.5px solid rgba(255,122,26,0.3); border-bottom-right-radius: 3px; }
-      .trn-connector-bottom { flex: 1; border-right: 1.5px solid rgba(255,122,26,0.3); border-top: 1.5px solid rgba(255,122,26,0.3); border-top-right-radius: 3px; }
-      .trn-connector-solo { align-self: center; width: 100%; height: 1.5px; background: rgba(255,122,26,0.3); }
-      .trn-champion-tag { display: inline-flex; align-items: center; gap: 4px; margin-bottom: 8px; padding: 3px 8px; border-radius: 999px; background: rgba(255,122,26,0.12); border: 1px solid rgba(255,122,26,0.35); font-size: 10px; color: #ff7a1a; text-transform: uppercase; letter-spacing: 0.1em; }
+      .trn-connector-top { flex: 1; border-right: 1.5px solid rgba(245, 178, 27,0.3); border-bottom: 1.5px solid rgba(245, 178, 27,0.3); border-bottom-right-radius: 3px; }
+      .trn-connector-bottom { flex: 1; border-right: 1.5px solid rgba(245, 178, 27,0.3); border-top: 1.5px solid rgba(245, 178, 27,0.3); border-top-right-radius: 3px; }
+      .trn-connector-solo { align-self: center; width: 100%; height: 1.5px; background: rgba(245, 178, 27,0.3); }
+      .trn-champion-tag { display: inline-flex; align-items: center; gap: 4px; margin-bottom: 8px; padding: 3px 8px; border-radius: 999px; background: rgba(245, 178, 27,0.12); border: 1px solid rgba(245, 178, 27,0.35); font-size: 10px; color: #f5b21b; text-transform: uppercase; letter-spacing: 0.1em; }
     </style>
     <section class="space-y-4">
       <div class="flex items-center justify-between">
@@ -519,7 +519,7 @@
         var fAwayWin = fGame && fGame.winnerTeamId != null && fGame.winnerTeamId === fGame.awayTeamId;
         var fHasScore = fGame && fGame.homeGoals != null && fGame.awayGoals != null;
         var champion = fGame && fGame.winnerTeamId ? teamById.get(fGame.winnerTeamId) : null;
-        var connColor = 'rgba(255,122,26,0.32)';
+        var connColor = 'rgba(245, 178, 27,0.32)';
       %>
       <div class="rounded-2xl border border-horriver-border/50 bg-black/25 p-4 overflow-x-auto">
         <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-horriver-gray/50 mb-4">Chave do Torneio</p>
@@ -610,11 +610,11 @@
         <div id="tournament-standings-export" class="tournament-export">
           <div class="export-header export-only">
             <div>
-              <div class="export-title"><%= (brand.name || "Nome da Pelada").toUpperCase() %> - TORNEIO</div>
+              <div class="export-title"><%= (brand.name || "Segundona FC").toUpperCase() %> - TORNEIO</div>
               <div class="export-subtitle">Classificação da pelada</div>
             </div>
             <div class="export-logo">
-              <img src="<%= brand.logoSmall || '/img/logo-64x64.svg' %>" alt="<%= brand.name || 'Nome da Pelada' %>" />
+              <img src="<%= brand.logoSmall || '/img/logo-64x64.png' %>" alt="<%= brand.name || 'Segundona FC' %>" />
             </div>
           </div>
 
@@ -650,17 +650,17 @@
             </div>
           </div>
 
-          <div class="export-footer export-only"><%= brand.instagramLabel || brand.name || 'Nome da Pelada' %></div>
+          <div class="export-footer export-only"><%= brand.instagramLabel || brand.name || 'Segundona FC' %></div>
         </div>
 
         <div id="tournament-games-export" class="tournament-export">
           <div class="export-header export-only">
             <div>
-              <div class="export-title"><%= (brand.name || "Nome da Pelada").toUpperCase() %> - TORNEIO</div>
+              <div class="export-title"><%= (brand.name || "Segundona FC").toUpperCase() %> - TORNEIO</div>
               <div class="export-subtitle">Jogos e resultados</div>
             </div>
             <div class="export-logo">
-              <img src="<%= brand.logoSmall || '/img/logo-64x64.svg' %>" alt="<%= brand.name || 'Nome da Pelada' %>" />
+              <img src="<%= brand.logoSmall || '/img/logo-64x64.png' %>" alt="<%= brand.name || 'Segundona FC' %>" />
             </div>
           </div>
 
@@ -699,7 +699,7 @@
             </div>
           <% }); %>
 
-          <div class="export-footer export-only"><%= brand.instagramLabel || brand.name || 'Nome da Pelada' %></div>
+          <div class="export-footer export-only"><%= brand.instagramLabel || brand.name || 'Segundona FC' %></div>
         </div>
       </div>
     </section>

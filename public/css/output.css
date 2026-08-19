@@ -1035,7 +1035,7 @@ select {
 }
 
 .bg-gradient-horriver {
-  background-image: linear-gradient(135deg, #7B1E1E 0%, #D96B1B 100%);
+  background-image: linear-gradient(135deg, #0b6b2a 0%, #f5b21b 100%);
 }
 
 .object-contain {
@@ -1193,7 +1193,7 @@ select {
 }
 
 .shadow-glow {
-  --tw-shadow: 0 0 10px rgba(217, 107, 27, 0.5);
+  --tw-shadow: 0 0 10px rgba(245, 178, 27, 0.5);
   --tw-shadow-colored: 0 0 10px var(--tw-shadow-color);
   box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
 }
@@ -1224,7 +1224,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #7B1E1E;
+  background: #0b6b2a;
   border-radius: 4px;
 }
 
@@ -1256,7 +1256,7 @@ body {
 }
 
 .hover\:shadow-glow:hover {
-  --tw-shadow: 0 0 10px rgba(217, 107, 27, 0.5);
+  --tw-shadow: 0 0 10px rgba(245, 178, 27, 0.5);
   --tw-shadow-colored: 0 0 10px var(--tw-shadow-color);
   box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
 }

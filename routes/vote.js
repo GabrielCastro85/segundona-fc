@@ -22,7 +22,7 @@ const TEAM_COLOR_THEMES = {
   Preto: { dot: "#e5e7eb", soft: "rgba(229, 231, 235, 0.10)", border: "rgba(229, 231, 235, 0.34)" },
   Vermelho: { dot: "#ef4444", soft: "rgba(239, 68, 68, 0.14)", border: "rgba(239, 68, 68, 0.48)" },
   Branco: { dot: "#f8fafc", soft: "rgba(248, 250, 252, 0.11)", border: "rgba(248, 250, 252, 0.40)" },
-  Laranja: { dot: "#ff7a1a", soft: "rgba(255, 122, 26, 0.14)", border: "rgba(255, 122, 26, 0.50)" },
+  Laranja: { dot: "#f5b21b", soft: "rgba(245, 178, 27, 0.14)", border: "rgba(245, 178, 27, 0.50)" },
 };
 
 function normalizeTeamColorName(value, fallbackIndex = 0) {
@@ -288,7 +288,7 @@ router.post("/:token", voteLimiter, async (req, res) => {
       voteSabotageAlert: validation.isInvalid
         ? {
             show: true,
-            imageSrc: "/img/logo-512x512.svg",
+            imageSrc: "/img/logo-512x512.png",
             title: "TO DE OLHO NO VACILO, CRAQUE",
           }
         : null,

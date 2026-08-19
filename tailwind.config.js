@@ -8,11 +8,11 @@ module.exports = {
     extend: {
       colors: {
         horriver: {
-          dark: "#0F0F0F",     // Fundo principal
-          red: "#7B1E1E",      // Vermelho vinho do escudo
-          orange: "#D96B1B",   // Laranja queimado
-          light: "#FFFFFF",    // Branco
-          gray: "#EDEDED"      // Cinza claro
+          dark: "#050805",
+          red: "#0b6b2a",
+          orange: "#f5b21b",
+          light: "#fff8e8",
+          gray: "#d7d2c4"
         }
       },
       fontFamily: {
@@ -21,10 +21,10 @@ module.exports = {
       },
       boxShadow: {
         card: "0 4px 12px rgba(0, 0, 0, 0.25)",
-        glow: "0 0 10px rgba(217, 107, 27, 0.5)"
+        glow: "0 0 10px rgba(245, 178, 27, 0.5)"
       },
       backgroundImage: {
-        "gradient-horriver": "linear-gradient(135deg, #7B1E1E 0%, #D96B1B 100%)"
+        "gradient-horriver": "linear-gradient(135deg, #0b6b2a 0%, #f5b21b 100%)"
       },
       borderRadius: {
         xl: "1rem",

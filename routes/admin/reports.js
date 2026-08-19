@@ -28,7 +28,7 @@ const ADMIN_PDF_REPORTS = [
     metricLabel: "Presenças",
     limit: null,
     nonZeroOnly: false,
-    accent: "#ff7a1a",
+    accent: "#f5b21b",
     columns: [
       { key: "rank", label: "#", align: "right" },
       { key: "player", label: "Jogador" },
@@ -47,7 +47,7 @@ const ADMIN_PDF_REPORTS = [
     metricLabel: "Presenças",
     limit: 10,
     nonZeroOnly: true,
-    accent: "#ff7a1a",
+    accent: "#f5b21b",
     columns: [
       { key: "rank", label: "#", align: "right" },
       { key: "player", label: "Jogador" },
@@ -66,7 +66,7 @@ const ADMIN_PDF_REPORTS = [
     metricLabel: "Presenças",
     limit: 20,
     nonZeroOnly: true,
-    accent: "#ff7a1a",
+    accent: "#f5b21b",
     columns: [
       { key: "rank", label: "#", align: "right" },
       { key: "player", label: "Jogador" },
@@ -187,7 +187,7 @@ const ADMIN_PDF_GENERATOR_REPORTS = [
     metricLabel: "Presenças",
     defaultLimit: null,
     nonZeroOnly: false,
-    accent: "#ff7a1a",
+    accent: "#f5b21b",
     columns: [
       { key: "rank", label: "#", align: "right" },
       { key: "player", label: "Jogador" },

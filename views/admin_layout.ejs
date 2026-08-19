@@ -1,22 +1,22 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
   <head>
-    <% const siteBrand = typeof brand !== "undefined" && brand ? brand : { name: "Nome da Pelada", logo: "/img/logo-128x128.svg" }; %>
+    <% const siteBrand = typeof brand !== "undefined" && brand ? brand : { name: "Segundona FC", logo: "/img/logo-128x128.png" }; %>
     <meta charset="UTF-8" />
     <title><%= title %> | Painel <%= siteBrand.name %></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="/css/output.css?v=<%= assetVersion %>" />
     <style>
       :focus-visible {
-        outline: 2px solid #ff7a1a;
+        outline: 2px solid #f5b21b;
         outline-offset: 2px;
       }
       input:focus,
       select:focus,
       textarea:focus {
         outline: none;
-        border-color: rgba(255, 122, 26, 0.8);
-        box-shadow: 0 0 0 2px rgba(255, 122, 26, 0.2);
+        border-color: rgba(245, 178, 27, 0.8);
+        box-shadow: 0 0 0 2px rgba(245, 178, 27, 0.2);
       }
       .admin-toast {
         position: fixed;
@@ -27,9 +27,9 @@
         max-width: 360px;
         padding: 0.75rem 1rem;
         border-radius: 999px;
-        border: 1px solid rgba(255, 122, 26, 0.6);
+        border: 1px solid rgba(245, 178, 27, 0.6);
         background: rgba(0, 0, 0, 0.85);
-        color: #ff7a1a;
+        color: #f5b21b;
         font-size: 12px;
         opacity: 0;
         transform: translateY(8px);
@@ -46,8 +46,8 @@
       }
       .admin-shell {
         background:
-          radial-gradient(circle at top left, rgba(139, 19, 32, 0.28), transparent 24%),
-          radial-gradient(circle at top right, rgba(255, 122, 26, 0.08), transparent 18%),
+          radial-gradient(circle at top left, rgba(11, 107, 42, 0.28), transparent 24%),
+          radial-gradient(circle at top right, rgba(245, 178, 27, 0.08), transparent 18%),
           linear-gradient(180deg, #110307 0%, #07070b 42%, #020207 100%);
       }
       .admin-header {

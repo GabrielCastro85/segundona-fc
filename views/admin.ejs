@@ -7,7 +7,7 @@
     position: relative;
     overflow: hidden;
     background:
-      radial-gradient(circle at top left, rgba(255, 122, 26, 0.08), transparent 28%),
+      radial-gradient(circle at top left, rgba(245, 178, 27, 0.08), transparent 28%),
       linear-gradient(180deg, rgba(20, 20, 24, 0.74), rgba(10, 10, 14, 0.84));
     border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.26);
@@ -18,7 +18,7 @@
     position: absolute;
     inset: 0 0 auto 0;
     height: 1px;
-    background: linear-gradient(90deg, rgba(255,122,26,0), rgba(255,122,26,0.42), rgba(255,122,26,0));
+    background: linear-gradient(90deg, rgba(245, 178, 27,0), rgba(245, 178, 27,0.42), rgba(245, 178, 27,0));
     opacity: 0.72;
   }
   .admin-row {
@@ -45,16 +45,16 @@
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
   }
   .admin-summary-card--accent {
-    border-color: rgba(255, 122, 26, 0.26);
+    border-color: rgba(245, 178, 27, 0.26);
     background:
-      radial-gradient(circle at top right, rgba(255, 122, 26, 0.12), transparent 34%),
+      radial-gradient(circle at top right, rgba(245, 178, 27, 0.12), transparent 34%),
       linear-gradient(180deg, rgba(255,255,255,0.028), rgba(0,0,0,0.16)),
       rgba(0, 0, 0, 0.18);
   }
   .admin-summary-card--finance {
-    border-color: rgba(255, 122, 26, 0.28);
+    border-color: rgba(245, 178, 27, 0.28);
     background:
-      radial-gradient(circle at top right, rgba(255, 122, 26, 0.14), transparent 36%),
+      radial-gradient(circle at top right, rgba(245, 178, 27, 0.14), transparent 36%),
       linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.18)),
       rgba(0, 0, 0, 0.2);
     box-shadow: 0 18px 38px rgba(0, 0, 0, 0.22);
@@ -72,13 +72,13 @@
     transition: border-color 0.18s ease, color 0.18s ease, background-color 0.18s ease;
   }
   .admin-toolbar-link:hover {
-    border-color: rgba(255, 122, 26, 0.4);
+    border-color: rgba(245, 178, 27, 0.4);
     color: #ffb685;
-    background: rgba(255, 122, 26, 0.08);
+    background: rgba(245, 178, 27, 0.08);
   }
   .admin-toolbar-link--accent {
-    border-color: rgba(255, 122, 26, 0.28);
-    background: rgba(255, 122, 26, 0.08);
+    border-color: rgba(245, 178, 27, 0.28);
+    background: rgba(245, 178, 27, 0.08);
     color: #ffcfaa;
   }
   .admin-mini-panel {
@@ -114,10 +114,10 @@
     color: rgba(178, 184, 194, 0.8);
   }
   .admin-focus-panel {
-    border: 1px solid rgba(255, 122, 26, 0.22);
+    border: 1px solid rgba(245, 178, 27, 0.22);
     border-radius: 1.45rem;
     background:
-      radial-gradient(circle at top right, rgba(255, 122, 26, 0.14), transparent 34%),
+      radial-gradient(circle at top right, rgba(245, 178, 27, 0.14), transparent 34%),
       linear-gradient(180deg, rgba(255,255,255,0.025), rgba(0,0,0,0.18)),
       rgba(0,0,0,0.2);
     box-shadow: 0 18px 38px rgba(0, 0, 0, 0.22);
@@ -136,9 +136,9 @@
     transition: border-color 0.18s ease, transform 0.18s ease, background 0.18s ease;
   }
   .admin-report-link:hover {
-    border-color: rgba(255, 122, 26, 0.34);
+    border-color: rgba(245, 178, 27, 0.34);
     background:
-      radial-gradient(circle at top right, rgba(255,122,26,0.10), transparent 34%),
+      radial-gradient(circle at top right, rgba(245, 178, 27,0.10), transparent 34%),
       linear-gradient(180deg, rgba(255,255,255,0.025), rgba(0,0,0,0.18)),
       rgba(0,0,0,0.2);
     transform: translateY(-1px);
@@ -150,8 +150,8 @@
     min-height: 28px;
     padding: 0.3rem 0.75rem;
     border-radius: 999px;
-    border: 1px solid rgba(255, 122, 26, 0.3);
-    background: rgba(255, 122, 26, 0.12);
+    border: 1px solid rgba(245, 178, 27, 0.3);
+    background: rgba(245, 178, 27, 0.12);
     color: #ffcfaa;
     font-size: 11px;
     line-height: 1;
@@ -163,8 +163,8 @@
     width: 0.45rem;
     height: 0.45rem;
     border-radius: 999px;
-    background: #ff7a1a;
-    box-shadow: 0 0 0 4px rgba(255, 122, 26, 0.14);
+    background: #f5b21b;
+    box-shadow: 0 0 0 4px rgba(245, 178, 27, 0.14);
   }
   .admin-preview-card {
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -224,7 +224,7 @@
           Painel
         </span>
         <div class="space-y-2">
-          <h1 class="font-title text-3xl md:text-4xl text-horriver-light">Admin <%= brand.name || "Nome da Pelada" %></h1>
+          <h1 class="font-title text-3xl md:text-4xl text-horriver-light">Admin <%= brand.name || "Segundona FC" %></h1>
           <p class="max-w-2xl text-sm leading-relaxed text-horriver-gray/82">Gerencie peladas, jogadores, destaques e processos do site com a mêsma linguagem visual do produto publico.</p>
         </div>
       </div>
@@ -834,7 +834,7 @@
             <% players.forEach(player => { %>
               <div class="admin-row flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl px-3 py-2" data-player-item>
                 <div class="w-full sm:w-auto flex items-center gap-3">
-                  <img src="<%= player.photoUrl || '/img/logo-64x64.svg' %>" class="w-10 h-10 rounded-full object-cover bg-horriver-dark" />
+                  <img src="<%= player.photoUrl || '/img/logo-64x64.png' %>" class="w-10 h-10 rounded-full object-cover bg-horriver-dark" />
                   <div>
                     <p class="text-horriver-light font-semibold"><%= player.name %></p>
                     <% if (player.nickname) { %><p class="text-[11px] text-horriver-gray">"<%= player.nickname %>"</p><% } %>

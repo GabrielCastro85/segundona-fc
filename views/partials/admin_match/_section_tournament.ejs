@@ -193,7 +193,7 @@
       .tournament-export {
         display: none;
         background: linear-gradient(180deg, #0f1115 0%, #050608 100%);
-        border: 2px solid rgba(255, 122, 26, 0.25);
+        border: 2px solid rgba(245, 178, 27, 0.25);
         border-radius: 24px;
         padding: 18px 22px;
         color: #f1f5f9;
@@ -243,7 +243,7 @@
         width: 48px;
         height: 48px;
         border-radius: 50%;
-        border: 2px solid rgba(255, 122, 26, 0.6);
+        border: 2px solid rgba(245, 178, 27, 0.6);
         background: #0b0c0f;
         display: grid;
         place-items: center;
@@ -291,7 +291,7 @@
         bottom: 3px;
         width: 4px;
         border-radius: 999px;
-        background: linear-gradient(180deg, #ff7a1a, #ffb455);
+        background: linear-gradient(180deg, #f5b21b, #ffe08a);
       }
       body.is-exporting .tournament-export .export-section-sub {
         font-size: 12px;
@@ -393,7 +393,7 @@
         font-size: 18px;
         font-weight: 800;
         color: #0b0b0b;
-        background: linear-gradient(90deg, #ff7a1a, #ffb455);
+        background: linear-gradient(90deg, #f5b21b, #ffe08a);
         padding: 0 12px;
         border-radius: 999px;
         box-shadow: 0 10px 20px rgba(0,0,0,0.25);
@@ -413,11 +413,11 @@
     <div id="tournament-standings-export-admin" class="tournament-export" data-export-root>
       <div class="export-header export-only">
         <div>
-          <div class="export-title"><%= (brand.name || "Nome da Pelada").toUpperCase() %> - TORNEIO</div>
+          <div class="export-title"><%= (brand.name || "Segundona FC").toUpperCase() %> - TORNEIO</div>
           <div class="export-subtitle">Classificação</div>
         </div>
         <div class="export-logo">
-          <img src="<%= brand.logoSmall || '/img/logo-64x64.svg' %>" alt="<%= brand.name || 'Nome da Pelada' %>" />
+          <img src="<%= brand.logoSmall || '/img/logo-64x64.png' %>" alt="<%= brand.name || 'Segundona FC' %>" />
         </div>
       </div>
 
@@ -472,11 +472,11 @@
     <div id="tournament-games-export-admin" class="tournament-export" data-export-root>
       <div class="export-header export-only">
         <div>
-          <div class="export-title"><%= (brand.name || "Nome da Pelada").toUpperCase() %> - TORNEIO</div>
+          <div class="export-title"><%= (brand.name || "Segundona FC").toUpperCase() %> - TORNEIO</div>
           <div class="export-subtitle">Jogos e resultados</div>
         </div>
         <div class="export-logo">
-          <img src="<%= brand.logoSmall || '/img/logo-64x64.svg' %>" alt="<%= brand.name || 'Nome da Pelada' %>" />
+          <img src="<%= brand.logoSmall || '/img/logo-64x64.png' %>" alt="<%= brand.name || 'Segundona FC' %>" />
         </div>
       </div>
 

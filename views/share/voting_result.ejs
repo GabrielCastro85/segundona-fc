@@ -8,12 +8,12 @@
   });
   const photoUrl = (player) => {
     if (player?.photoDataUri) return player.photoDataUri;
-    if (!player?.photoUrl) return baseUrl + '/img/logo-128x128.svg';
+    if (!player?.photoUrl) return baseUrl + '/img/logo-128x128.png';
     if (/^https?:\/\//i.test(player.photoUrl)) return player.photoUrl;
     return baseUrl + '/' + String(player.photoUrl).replace(/^\/+/, '');
   };
-  const logoMarkSrc = typeof logoMarkUrl !== 'undefined' && logoMarkUrl ? logoMarkUrl : baseUrl + '/img/logo-128x128.svg';
-  const logoIconSrc = typeof logoIconUrl !== 'undefined' && logoIconUrl ? logoIconUrl : baseUrl + '/img/logo-32x32.svg';
+  const logoMarkSrc = typeof logoMarkUrl !== 'undefined' && logoMarkUrl ? logoMarkUrl : baseUrl + '/img/logo-128x128.png';
+  const logoIconSrc = typeof logoIconUrl !== 'undefined' && logoIconUrl ? logoIconUrl : baseUrl + '/img/logo-32x32.png';
   const displayName = (player) => player?.nickname || player?.name || '-';
   const initialOf = (player) => displayName(player).charAt(0).toUpperCase() || '?';
   const craque = awards?.craque || null;
@@ -51,10 +51,10 @@
       border-radius: 34px;
       overflow: hidden;
       background:
-        radial-gradient(circle at 12% 10%, rgba(139,19,32,0.26) 0%, transparent 38%),
-        radial-gradient(circle at 86% 86%, rgba(255,122,26,0.10) 0%, transparent 34%),
+        radial-gradient(circle at 12% 10%, rgba(11, 107, 42,0.26) 0%, transparent 38%),
+        radial-gradient(circle at 86% 86%, rgba(245, 178, 27,0.10) 0%, transparent 34%),
         linear-gradient(155deg, #1e0509 0%, #0d0210 52%, #050509 100%);
-      border: 1px solid rgba(255,122,26,0.22);
+      border: 1px solid rgba(245, 178, 27,0.22);
       box-shadow: 0 18px 42px rgba(0,0,0,0.34);
       font-family: 'Manrope', system-ui, sans-serif;
       -webkit-font-smoothing: antialiased;
@@ -92,7 +92,7 @@
       font-size: 20px;
       letter-spacing: 0.26em;
       text-transform: uppercase;
-      color: #ffb36a;
+      color: #ffe08a;
       line-height: 1;
     }
 
@@ -135,14 +135,14 @@
     .vrc-title-meta-date {
       font-size: 13px;
       font-weight: 600;
-      color: #ff7a1a;
+      color: #f5b21b;
       line-height: 1;
     }
 
     /* ── Dividers ── */
     .vrc-divider {
       height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255,122,26,0.62), transparent);
+      background: linear-gradient(90deg, transparent, rgba(245, 178, 27,0.62), transparent);
       margin-bottom: 24px;
     }
     .vrc-divider--subtle {
@@ -174,8 +174,8 @@
       border-radius: 50%;
       overflow: hidden;
       flex-shrink: 0;
-      border: 3px solid rgba(255,122,26,0.85);
-      box-shadow: 0 0 28px rgba(255,122,26,0.28);
+      border: 3px solid rgba(245, 178, 27,0.85);
+      box-shadow: 0 0 28px rgba(245, 178, 27,0.28);
       background: #111;
     }
     .vrc-craque-photo img {
@@ -188,10 +188,10 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(255,122,26,0.10);
+      background: rgba(245, 178, 27,0.10);
       font-family: 'Bebas Neue', sans-serif;
       font-size: 48px;
-      color: #ff7a1a;
+      color: #f5b21b;
       line-height: 1;
     }
     .vrc-craque-info { flex: 1; min-width: 0; }
@@ -219,8 +219,8 @@
       gap: 10px;
       padding: 16px 20px;
       border-radius: 20px;
-      border: 1px solid rgba(255,122,26,0.30);
-      background: rgba(255,122,26,0.06);
+      border: 1px solid rgba(245, 178, 27,0.30);
+      background: rgba(245, 178, 27,0.06);
     }
     .vrc-craque-score-label {
       font-size: 10px;
@@ -234,13 +234,13 @@
       display: block;
       width: 40px; height: 3px;
       border-radius: 999px;
-      background: linear-gradient(90deg, #8b1320, #ff7a1a);
+      background: linear-gradient(90deg, #0b6b2a, #f5b21b);
     }
     .vrc-craque-score-value {
       font-family: 'Bebas Neue', sans-serif;
       font-size: 56px;
       line-height: 0.88;
-      color: #ff7a1a;
+      color: #f5b21b;
     }
 
     /* ── Mini photo (shared by highlights + top5) ── */
@@ -249,7 +249,7 @@
       border-radius: 50%;
       overflow: hidden;
       flex-shrink: 0;
-      border: 1.5px solid rgba(255,122,26,0.40);
+      border: 1.5px solid rgba(245, 178, 27,0.40);
       background: #111;
     }
     .vrc-mini-photo img {
@@ -262,10 +262,10 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(255,122,26,0.10);
+      background: rgba(245, 178, 27,0.10);
       font-family: 'Bebas Neue', sans-serif;
       font-size: 18px;
-      color: #ff7a1a;
+      color: #f5b21b;
       line-height: 1;
     }
 
@@ -283,7 +283,7 @@
       font-family: 'Bebas Neue', sans-serif;
       font-size: 18px;
       letter-spacing: 0.10em;
-      color: rgba(255,122,26,0.72);
+      color: rgba(245, 178, 27,0.72);
       width: 44px;
       flex-shrink: 0;
       line-height: 1;
@@ -299,7 +299,7 @@
     .vrc-highlight-score {
       font-family: 'Bebas Neue', sans-serif;
       font-size: 28px;
-      color: #ff7a1a;
+      color: #f5b21b;
       line-height: 1;
       flex-shrink: 0;
       min-width: 56px;
@@ -319,7 +319,7 @@
     .vrc-top5-rank {
       font-family: 'Bebas Neue', sans-serif;
       font-size: 22px;
-      color: rgba(255,122,26,0.52);
+      color: rgba(245, 178, 27,0.52);
       width: 28px;
       flex-shrink: 0;
       text-align: center;
@@ -385,7 +385,7 @@
       <!-- Branding -->
       <div class="vrc-branding">
         <img class="vrc-logo" src="<%= logoIconSrc %>" alt="" />
-        <span class="vrc-brand-name"><%= brand.name || "Nome da Pelada" %></span>
+        <span class="vrc-brand-name"><%= brand.name || "Segundona FC" %></span>
       </div>
 
       <!-- Título + info da pelada -->
@@ -490,8 +490,8 @@
 
       <!-- Footer -->
       <div class="vrc-footer">
-        <span><%= brand.url || "site-da-pelada.com" %></span>
-        <span><%= brand.instagramLabel || "@sua_pelada" %></span>
+        <span><%= brand.url || "segundona-fc.com" %></span>
+        <span><%= brand.instagramLabel || "@segundonafc" %></span>
       </div>
 
     </div>

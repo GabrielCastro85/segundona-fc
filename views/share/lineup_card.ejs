@@ -9,10 +9,10 @@
   const cleanBaseUrl = String(baseUrl || "").replace(/\/$/, "");
   const logoMarkSrc = typeof logoMarkUrl !== "undefined" && logoMarkUrl
     ? logoMarkUrl
-    : `${cleanBaseUrl}/img/logo-128x128.svg`;
+    : `${cleanBaseUrl}/img/logo-128x128.png`;
   const logoIconSrc = typeof logoIconUrl !== "undefined" && logoIconUrl
     ? logoIconUrl
-    : `${cleanBaseUrl}/img/logo-32x32.svg`;
+    : `${cleanBaseUrl}/img/logo-32x32.png`;
 
   const escHtml = (value = "") =>
     String(value)
@@ -232,11 +232,11 @@
       isolation: isolate;
       border-radius: 52px;
       background:
-        radial-gradient(circle at 8% -6%, rgba(139, 19, 32, 0.34) 0%, transparent 32%),
-        radial-gradient(circle at 82% 14%, rgba(255, 122, 26, 0.10) 0%, transparent 28%),
-        radial-gradient(circle at 50% 100%, rgba(255, 122, 26, 0.08) 0%, transparent 34%),
+        radial-gradient(circle at 8% -6%, rgba(11, 107, 42, 0.34) 0%, transparent 32%),
+        radial-gradient(circle at 82% 14%, rgba(245, 178, 27, 0.10) 0%, transparent 28%),
+        radial-gradient(circle at 50% 100%, rgba(245, 178, 27, 0.08) 0%, transparent 34%),
         linear-gradient(180deg, #330309 0%, #160207 37%, #050509 100%);
-      border: 1px solid rgba(255, 122, 26, 0.25);
+      border: 1px solid rgba(245, 178, 27, 0.25);
       box-shadow: 0 34px 90px rgba(0, 0, 0, 0.50);
     }
 
@@ -318,7 +318,7 @@
       height: 4px;
       margin-top: 18px;
       border-radius: 999px;
-      background: linear-gradient(90deg, #ff7a1a 0%, rgba(255, 122, 26, 0.66) 44%, rgba(255, 122, 26, 0.10) 100%);
+      background: linear-gradient(90deg, #f5b21b 0%, rgba(245, 178, 27, 0.66) 44%, rgba(245, 178, 27, 0.10) 100%);
     }
 
     .lc-date-card {
@@ -326,7 +326,7 @@
       min-height: 164px;
       padding: 34px 26px 20px;
       border-radius: 28px;
-      border: 1px solid rgba(255, 122, 26, 0.34);
+      border: 1px solid rgba(245, 178, 27, 0.34);
       background: linear-gradient(180deg, rgba(18, 17, 23, 0.96) 0%, rgba(12, 12, 16, 0.98) 100%);
       display: grid;
       grid-template-columns: minmax(0, 1fr) 58px;
@@ -369,7 +369,7 @@
       width: 58px;
       height: 58px;
       border-radius: 999px;
-      border: 2px solid rgba(255, 122, 26, 0.92);
+      border: 2px solid rgba(245, 178, 27, 0.92);
       background: rgba(12, 12, 16, 0.82);
       display: flex;
       align-items: center;
@@ -683,7 +683,7 @@
     <div class="lc-inner">
       <header class="lc-header">
         <div class="lc-heading">
-          <div class="lc-brand"><%= brand.name || "Nome da Pelada" %></div>
+          <div class="lc-brand"><%= brand.name || "Segundona FC" %></div>
           <h1 class="lc-title">Times Sorteados</h1>
         </div>
 
@@ -694,7 +694,7 @@
             <span class="lc-count"><%= teamCount %> times</span>
           </div>
           <span class="lc-logo-ring">
-            <img src="<%= logoIconSrc %>" alt="<%= brand.name || 'Nome da Pelada' %>" />
+            <img src="<%= logoIconSrc %>" alt="<%= brand.name || 'Segundona FC' %>" />
           </span>
         </aside>
       </header>
@@ -787,8 +787,8 @@
       <% } %>
 
       <footer class="lc-footer">
-        <span><%= brand.url || "site-da-pelada.com" %></span>
-        <span><%= brand.instagramLabel || "@sua_pelada" %></span>
+        <span><%= brand.url || "segundona-fc.com" %></span>
+        <span><%= brand.instagramLabel || "@segundonafc" %></span>
       </footer>
     </div>
   </div>
