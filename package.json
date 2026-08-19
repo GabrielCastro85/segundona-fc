@@ -1,0 +1,65 @@
+{
+  "name": "modelo-site-pelada",
+  "version": "2.0.0",
+  "description": "Modelo white-label para site de pelada com rankings, votacoes e financeiro",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "start:lowmem": "node --max-old-space-size=384 server.js",
+    "start:lowmem:gc": "node --expose-gc --max-old-space-size=384 server.js",
+    "dev": "nodemon server.js",
+    "dev:lowmem": "node --max-old-space-size=384 ./node_modules/nodemon/bin/nodemon.js server.js",
+    "postinstall": "prisma generate && npx puppeteer browsers install chrome",
+    "prisma:migrate": "npx prisma migrate dev",
+    "prisma:generate": "npx prisma generate",
+    "prisma:seed": "npx prisma db seed",
+    "overall:recalc": "node scripts/recalculateOverall.js",
+    "achievements:recalc": "node scripts/recomputeAchievements.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.3",
+    "compression": "^1.8.1",
+    "connect-flash": "^0.1.1",
+    "cookie-parser": "^1.4.7",
+    "csurf": "^1.11.0",
+    "csv-parser": "^3.2.0",
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "express-ejs-layouts": "^2.5.1",
+    "express-rate-limit": "^7.5.1",
+    "express-session": "^1.18.2",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "method-override": "^3.0.0",
+    "multer": "^1.4.5-lts.1",
+    "pg": "^8.16.3",
+    "prisma": "^5.22.0",
+    "puppeteer": "^23.8.1",
+    "sharp": "^0.33.5",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
+  "keywords": [
+    "pelada",
+    "white-label",
+    "nodejs",
+    "express",
+    "tailwind",
+    "prisma",
+    "ejs",
+    "futebol"
+  ],
+  "engines": {
+    "node": "20.x"
+  },
+  "author": "Gabriel Castro",
+  "license": "MIT"
+}

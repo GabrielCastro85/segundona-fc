@@ -1,0 +1,1432 @@
+﻿<% /* Painel do Admin - reorganizado para destacar as funcoes principais */ %>
+
+<style>
+  @import url("https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.css");
+
+  .admin-panel {
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at top left, rgba(255, 122, 26, 0.08), transparent 28%),
+      linear-gradient(180deg, rgba(20, 20, 24, 0.74), rgba(10, 10, 14, 0.84));
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.26);
+    backdrop-filter: blur(6px);
+  }
+  .admin-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(255,122,26,0), rgba(255,122,26,0.42), rgba(255,122,26,0));
+    opacity: 0.72;
+  }
+  .admin-row {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: background 0.18s ease, border-color 0.18s ease;
+  }
+  .admin-row:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 122, 24, 0.35);
+  }
+  .admin-table thead th {
+    position: sticky;
+    top: 0;
+    background: rgba(0, 0, 0, 0.82);
+    z-index: 2;
+  }
+  .admin-summary-card {
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 1.35rem;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.028), rgba(0,0,0,0.16)),
+      rgba(0, 0, 0, 0.18);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+  .admin-summary-card--accent {
+    border-color: rgba(255, 122, 26, 0.26);
+    background:
+      radial-gradient(circle at top right, rgba(255, 122, 26, 0.12), transparent 34%),
+      linear-gradient(180deg, rgba(255,255,255,0.028), rgba(0,0,0,0.16)),
+      rgba(0, 0, 0, 0.18);
+  }
+  .admin-summary-card--finance {
+    border-color: rgba(255, 122, 26, 0.28);
+    background:
+      radial-gradient(circle at top right, rgba(255, 122, 26, 0.14), transparent 36%),
+      linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.18)),
+      rgba(0, 0, 0, 0.2);
+    box-shadow: 0 18px 38px rgba(0, 0, 0, 0.22);
+  }
+  .admin-toolbar-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: 0.4rem 0.92rem;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: #f5f5f5;
+    background: rgba(255,255,255,0.03);
+    transition: border-color 0.18s ease, color 0.18s ease, background-color 0.18s ease;
+  }
+  .admin-toolbar-link:hover {
+    border-color: rgba(255, 122, 26, 0.4);
+    color: #ffb685;
+    background: rgba(255, 122, 26, 0.08);
+  }
+  .admin-toolbar-link--accent {
+    border-color: rgba(255, 122, 26, 0.28);
+    background: rgba(255, 122, 26, 0.08);
+    color: #ffcfaa;
+  }
+  .admin-mini-panel {
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    border-radius: 1.3rem;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.025), rgba(0,0,0,0.16)),
+      rgba(0,0,0,0.16);
+  }
+  .admin-ranking-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .admin-ranking-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-top: 0.55rem;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    color: rgba(226, 232, 240, 0.82);
+    font-size: 12px;
+  }
+  .admin-ranking-row:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+  .admin-ranking-empty {
+    padding-top: 0.55rem;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    font-size: 12px;
+    color: rgba(178, 184, 194, 0.8);
+  }
+  .admin-focus-panel {
+    border: 1px solid rgba(255, 122, 26, 0.22);
+    border-radius: 1.45rem;
+    background:
+      radial-gradient(circle at top right, rgba(255, 122, 26, 0.14), transparent 34%),
+      linear-gradient(180deg, rgba(255,255,255,0.025), rgba(0,0,0,0.18)),
+      rgba(0,0,0,0.2);
+    box-shadow: 0 18px 38px rgba(0, 0, 0, 0.22);
+  }
+  .admin-report-link {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    min-height: 122px;
+    border-radius: 1.15rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.025), rgba(0,0,0,0.16)),
+      rgba(0,0,0,0.18);
+    padding: 1rem;
+    transition: border-color 0.18s ease, transform 0.18s ease, background 0.18s ease;
+  }
+  .admin-report-link:hover {
+    border-color: rgba(255, 122, 26, 0.34);
+    background:
+      radial-gradient(circle at top right, rgba(255,122,26,0.10), transparent 34%),
+      linear-gradient(180deg, rgba(255,255,255,0.025), rgba(0,0,0,0.18)),
+      rgba(0,0,0,0.2);
+    transform: translateY(-1px);
+  }
+  .admin-edit-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 28px;
+    padding: 0.3rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 122, 26, 0.3);
+    background: rgba(255, 122, 26, 0.12);
+    color: #ffcfaa;
+    font-size: 11px;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .admin-edit-state::before {
+    content: "";
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 999px;
+    background: #ff7a1a;
+    box-shadow: 0 0 0 4px rgba(255, 122, 26, 0.14);
+  }
+  .admin-preview-card {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1rem;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.025), rgba(0,0,0,0.16)),
+      rgba(0,0,0,0.18);
+    padding: 0.85rem;
+  }
+  .admin-preview-card img {
+    width: 100%;
+    max-height: 220px;
+    object-fit: cover;
+    border-radius: 0.85rem;
+    background: rgba(0, 0, 0, 0.3);
+  }
+  #teamPhotoCropContainer .cropper-container {
+    max-width: 100%;
+  }
+  #teamPhotoCropImage {
+    display: block;
+    max-width: 100%;
+  }
+</style>
+
+<%
+  const adminNowParts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(new Date());
+  const adminDefaultMonth = Number(adminNowParts.find((part) => part.type === "month")?.value || 1);
+  const adminDefaultYear = Number(adminNowParts.find((part) => part.type === "year")?.value || new Date().getFullYear());
+  const adminMonthNames = [
+    "janeiro",
+    "fevereiro",
+    "mar\u00E7o",
+    "abril",
+    "maio",
+    "junho",
+    "julho",
+    "agosto",
+    "setembro",
+    "outubro",
+    "novembro",
+    "dezembro",
+  ];
+%>
+
+<div class="space-y-10">
+  <!-- Header + ações rápidas -->
+  <header class="admin-panel rounded-[1.9rem] p-5 md:p-6">
+    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+      <div class="space-y-3">
+        <span class="inline-flex items-center gap-2 rounded-full border border-horriver-orange/25 bg-horriver-orange/10 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[#ffb685]">
+          <span class="inline-flex h-4 w-4 items-center justify-center rounded-md border border-horriver-orange/40 text-[9px] text-horriver-orange">AD</span>
+          Painel
+        </span>
+        <div class="space-y-2">
+          <h1 class="font-title text-3xl md:text-4xl text-horriver-light">Admin <%= brand.name || "Nome da Pelada" %></h1>
+          <p class="max-w-2xl text-sm leading-relaxed text-horriver-gray/82">Gerencie peladas, jogadores, destaques e processos do site com a mêsma linguagem visual do produto publico.</p>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-2 text-xs">
+        <% if (admin) { %>
+          <a
+            href="/admin/auditoria"
+            class="px-3 py-1 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
+          >
+            Auditoria
+          </a>
+          <a
+            href="/admin/senha"
+            class="px-3 py-1 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
+          >
+            Trocar senha
+          </a>
+        <% } %>
+      </div>
+    </div>
+    <div class="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+      <a href="/admin/finance" class="admin-summary-card admin-summary-card--finance p-4 space-y-3 block hover:border-horriver-orange/35 hover:bg-white/[0.06] transition">
+        <span class="block text-[10px] uppercase tracking-[0.16em] text-horriver-gray/78">Financeiro</span>
+        <strong class="block text-lg leading-none text-horriver-light font-semibold">Caixa da pelada</strong>
+        <p class="text-sm text-horriver-gray/84">Controle mensalidades, cobranças, convidados e o caixa do mês em um unico lugar.</p>
+        <div class="flex flex-wrap gap-2 text-[11px]">
+          <span class="inline-flex items-center rounded-full border border-horriver-orange/20 bg-horriver-orange/10 px-2.5 py-1 text-[#ffcfaa]">Mensalidades</span>
+          <span class="inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-horriver-gray/80">Cobrança rapida</span>
+          <span class="inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-horriver-gray/80">Livro-caixa</span>
+        </div>
+        <span class="inline-flex items-center gap-2 text-sm font-semibold text-horriver-orange">
+          Abrir financeiro
+          <span aria-hidden="true">-&gt;</span>
+        </span>
+      </a>
+      <div class="admin-summary-card admin-summary-card--accent p-4 space-y-2">
+        <span class="block text-[10px] uppercase tracking-[0.16em] text-horriver-gray/78">Operação</span>
+        <strong class="block text-lg leading-none text-horriver-orange font-semibold">Peladas</strong>
+        <p class="text-sm text-horriver-gray/84">Crie novas rodadas, abra stats e mantenha o histórico organizado.</p>
+      </div>
+      <div class="admin-summary-card p-4 space-y-2">
+        <span class="block text-[10px] uppercase tracking-[0.16em] text-horriver-gray/78">Conteudo</span>
+        <strong class="block text-lg leading-none text-horriver-light font-semibold">Destaques</strong>
+        <p class="text-sm text-horriver-gray/84">Atualize premios da semana, votação do mês e publicações do projeto.</p>
+      </div>
+      <div class="admin-summary-card p-4 space-y-2">
+        <span class="block text-[10px] uppercase tracking-[0.16em] text-horriver-gray/78">Elenco</span>
+        <strong class="block text-lg leading-none text-horriver-light font-semibold">Jogadores</strong>
+        <p class="text-sm text-horriver-gray/84">Cadastre nomes, fotos e dados do plantel sem perder o contexto do site.</p>
+      </div>
+    </div>
+  </header>
+
+  <div class="admin-panel rounded-2xl px-4 py-3 sticky top-0 z-20 backdrop-blur-md" style="background: rgba(8,8,12,0.92);">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 text-[11px]">
+      <div class="space-y-1">
+        <span class="text-horriver-gray uppercase tracking-[0.2em]">Navegação rapida</span>
+        <p class="text-[12px] text-horriver-gray/72">Atalhos para os blocos que mais pedem ajustes no dia a dia.</p>
+      </div>
+      <div class="flex items-center gap-2 overflow-x-auto whitespace-nowrap pb-1 sm:flex-wrap sm:overflow-visible sm:whitespace-normal">
+        <a href="#peladas" class="admin-toolbar-link">Peladas</a>
+        <a href="#destaques" class="admin-toolbar-link">Destaques</a>
+        <a href="#jogadores" class="admin-toolbar-link">Jogadores</a>
+        <a href="/admin/finance" class="inline-flex items-center gap-1.5 admin-toolbar-link admin-toolbar-link--accent font-semibold">
+          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Financeiro
+        </a>
+        <a href="/admin/monthly-vote" class="px-3 py-1 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition">Votação do mês</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Peladas -->
+  <section id="peladas" class="scroll-mt-16 space-y-4">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+      <h2 class="font-title text-xl text-horriver-orange">Peladas</h2>
+      <p class="text-xs text-horriver-gray">Criar, listar, abrir stats ou excluir.</p>
+    </div>
+
+    <% const lastMatch = groupedMatches[0]?.matches[0]; %>
+    <% if (lastMatch) { %>
+    <div class="admin-panel rounded-2xl px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div class="flex items-center gap-3 min-w-0">
+        <span class="flex-shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-full border border-horriver-orange/30 bg-horriver-orange/10 text-horriver-orange">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </span>
+        <div class="min-w-0">
+          <span class="block text-[10px] uppercase tracking-[0.16em] text-horriver-gray/72">Ultima pelada</span>
+          <span class="block text-sm font-semibold text-horriver-light truncate">
+            <%= new Date(lastMatch.playedAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', day: '2-digit', month: '2-digit' }) %>
+            <% if (lastMatch.description) { %> &mdash; <%= lastMatch.description %><% } %>
+          </span>
+        </div>
+      </div>
+      <a
+        href="/admin/matches/<%= lastMatch.id %>"
+        class="flex-shrink-0 inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-black text-xs font-semibold hover:bg-orange-500 transition"
+      >Abrir stats</a>
+    </div>
+    <% } %>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Nova pelada -->
+      <div class="admin-panel rounded-2xl p-4 space-y-3">
+        <h3 class="font-semibold text-lg text-horriver-light">Nova Pelada</h3>
+        <form id="newMatchForm" action="/admin/matches" method="POST" class="space-y-3" data-autosave="true" data-toast="Pelada criada.">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <label class="flex flex-col gap-1 text-sm text-horriver-gray">
+              Data
+              <input
+                type="date"
+                name="playedDate"
+                id="playedDate"
+                required
+                class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light"
+              />
+            </label>
+            <label class="flex flex-col gap-1 text-sm text-horriver-gray">
+              Horario (opcional)
+              <input
+                type="time"
+                name="playedTime"
+                id="playedTime"
+                class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light"
+              />
+            </label>
+          </div>
+          <label class="flex flex-col gap-1 text-sm text-horriver-gray">
+            Descricao (opcional)
+            <input
+              type="text"
+              name="description"
+              id="description"
+              placeholder="Ex: Pelada de feriado"
+              class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light"
+            />
+          </label>
+          <label class="flex flex-col gap-1 text-sm text-horriver-gray">
+            Cor do time vencedor (opcional)
+            <select
+              name="winnerColor"
+              id="winnerColor"
+              class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light"
+            >
+              <option value="">Nenhuma</option>
+              <option value="Amarelo">Amarelo</option>
+              <option value="Azul">Azul</option>
+              <option value="Preto">Preto</option>
+              <option value="Vermelho">Vermelho</option>
+              
+            </select>
+          </label>
+          <label class="flex flex-col gap-1 text-sm text-horriver-gray">
+            Nome do time vencedor (opcional)
+            <input
+              type="text"
+              name="winnerTeam"
+              id="winnerTeam"
+              placeholder="Ex: Laranja"
+              class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light"
+            />
+          </label>
+          <button
+            type="submit"
+            class="w-full px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
+          >Criar Pelada</button>
+        </form>
+      </div>
+
+      <!-- Historico -->
+      <div class="lg:col-span-2 admin-panel rounded-2xl p-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-2">
+          <h3 class="font-semibold text-lg text-horriver-light">Histórico de Peladas</h3>
+          <span class="text-xs text-horriver-gray">Role para ver mêses anteriores</span>
+        </div>
+        <div class="mb-2">
+          <input
+            id="matchSearch"
+            type="text"
+            placeholder="Buscar pelada..."
+            class="w-full bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light text-xs"
+          />
+        </div>
+        <div class="space-y-3 max-h-[520px] overflow-y-auto pr-1 text-sm">
+          <% if (groupedMatches.length > 0) { %>
+            <% groupedMatches.forEach(group => { %>
+              <div class="space-y-2">
+                <p class="text-horriver-gray uppercase text-[11px] tracking-wide"><%= group.group %></p>
+                <div class="space-y-2">
+                  <% group.matches.forEach(match => { %>
+                    <div class="admin-row flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between rounded-xl px-3 py-2" data-match-item>
+                      <div>
+                        <p class="text-horriver-light font-semibold">
+                          <%= new Date(match.playedAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', day: '2-digit', month: '2-digit' }) %>
+                        </p>
+                        <p class="text-[12px] text-horriver-gray">
+                          <%= match.description || 'Pelada Padrão' %>
+                        </p>
+                      </div>
+                      <div class="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-2">
+                        <a
+                          href="/admin/matches/<%= match.id %>"
+                          class="inline-flex items-center justify-center px-3 py-1 rounded-full bg-horriver-orange text-black text-[11px] font-semibold hover:bg-orange-500 transition min-h-[34px]"
+                        >Stats</a>
+                        <form action="/admin/matches/<%= match.id %>/delete" method="POST" onsubmit="return confirm('Excluir está pelada e todos os dados?');">
+                           <button type="submit" class="px-2 py-1 rounded-full text-red-500 hover:text-red-400 text-[11px] min-h-[34px]">Excluir</button>
+                        </form>
+                      </div>
+                    </div>
+                  <% }) %>
+                </div>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <p class="text-horriver-gray">Nenhuma pelada cadastrada.</p>
+          <% } %>
+        </div>
+        <p class="text-xs text-horriver-gray mt-2">
+          Exibindo as últimas 120 peladas. Para histórico completo, use os
+          <a href="#relatorios" class="text-horriver-orange hover:underline">relatórios PDF</a>.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Destaques -->
+  <section id="destaques" class="scroll-mt-16 space-y-4">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+      <h2 class="font-title text-xl text-horriver-orange">Destaques</h2>
+      <p class="text-xs text-horriver-gray">Craque da semana e do mês.</p>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Craque da semana -->
+      <div class="admin-panel rounded-2xl p-4 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+          <div class="space-y-1">
+            <h3 class="font-semibold text-lg text-horriver-light">Craque da Semana</h3>
+            <p id="weeklyFormHint" class="text-xs text-horriver-gray">
+              Publique o craque da pelada e a foto do time vencedor da semana.
+            </p>
+          </div>
+          <span id="weeklyEditState" class="admin-edit-state hidden">Editando destaque</span>
+        </div>
+        <form
+          id="weeklyForm"
+          action="/admin/weekly-awards"
+          method="POST"
+          enctype="multipart/form-data"
+          class="space-y-3"
+          data-autosave="true"
+          data-toast="Destaque da semana salvo."
+        >
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-horriver-gray">
+            <label class="flex flex-col gap-1">
+              Data de inicio
+              <input
+                id="weeklyWeekStart"
+                type="date"
+                name="weekStart"
+                required
+                class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light"
+              />
+            </label>
+            <label class="flex flex-col gap-1">
+              Craque
+              <select
+                id="weeklyBestPlayerId"
+                name="bestPlayerId"
+                class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light"
+              >
+                <option value="">Nenhum</option>
+                <% players.forEach(p => { %>
+                  <option value="<%= p.id %>"><%= p.name %></option>
+                <% }) %>
+              </select>
+            </label>
+          </div>
+          <label class="flex flex-col gap-1 text-sm text-horriver-gray">
+            Pelada do destaque
+            <select
+              id="weeklyWinningMatchId"
+              name="winningMatchId"
+              class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light"
+            >
+              <option value="">Nenhuma</option>
+              <% matches.forEach(m => { %>
+                <option value="<%= m.id %>"><%= new Date(m.playedAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) %> - <%= m.description || 'Pelada' %></option>
+              <% }) %>
+            </select>
+          </label>
+          <label class="flex flex-col gap-1 text-sm text-horriver-gray">
+            Foto (time da semana)
+            <input
+              id="weeklyTeamPhotoInput"
+              type="file"
+              name="teamPhoto"
+              accept="image/jpeg,image/png,image/webp"
+              class="text-sm"
+            />
+            <span class="text-[11px] text-horriver-gray">
+              Se estiver editando e não enviar outra imagem, a foto atual sera mantida.
+            </span>
+          </label>
+
+          <div id="weeklyCurrentPhotoCard" class="admin-preview-card hidden space-y-2">
+            <p class="text-[11px] uppercase tracking-[0.14em] text-horriver-gray/80">
+              Foto atual do time vencedor
+            </p>
+            <img id="weeklyCurrentPhotoPreview" src="" alt="Foto atual do time vencedor" />
+          </div>
+
+          <div id="teamPhotoCropContainer" class="admin-preview-card hidden space-y-3">
+            <div class="flex items-center justify-between gap-2">
+              <p class="text-[11px] uppercase tracking-[0.14em] text-horriver-gray/80">
+                Corte da nova foto
+              </p>
+              <span class="text-[10px] text-horriver-gray/70">Proporcao 16:9</span>
+            </div>
+            <div class="overflow-hidden rounded-xl border border-horriver-border/60 bg-black/50">
+              <img id="teamPhotoCropImage" src="" alt="Pre-visualização para corte" />
+            </div>
+            <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+              <button
+                type="button"
+                id="applyTeamPhotoCrop"
+                class="w-full sm:w-auto px-4 py-2 rounded-full border border-horriver-orange/35 text-horriver-orange hover:bg-horriver-orange hover:text-black transition text-sm"
+              >
+                Aplicar corte
+              </button>
+              <p id="teamPhotoCropDone" class="hidden text-[11px] text-green-400">
+                Corte preparado. Ao salvar, a imagem recortada sera enviada.
+              </p>
+            </div>
+          </div>
+
+          <p id="teamPhotoCropError" class="hidden text-[11px] text-red-400"></p>
+
+          <div class="flex flex-col sm:flex-row gap-2">
+            <button
+              id="weeklySubmitButton"
+              type="submit"
+              class="w-full sm:flex-1 px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
+            >
+              Salvar destaque
+            </button>
+            <button
+              id="weeklyCancelEdit"
+              type="button"
+              class="hidden w-full sm:w-auto px-4 py-2 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
+            >
+              Cancelar edição
+            </button>
+          </div>
+        </form>
+        <% if (weeklyAwards.length > 0) { %>
+          <div class="border-t border-horriver-border/50 pt-3 space-y-2 text-xs text-horriver-gray">
+            <p class="font-semibold text-horriver-light">Últimos destaques</p>
+            <% weeklyAwards.forEach(award => { %>
+              <div class="admin-row flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between rounded-lg px-2 py-1">
+                <div class="space-y-0.5">
+                  <span class="block">
+                    <%= new Date(award.weekStart).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) %> - <%= award.bestPlayer?.name || 'N/A' %>
+                  </span>
+                  <span class="block text-[11px] text-horriver-gray">
+                    <%= award.winningMatch ? (award.winningMatch.description || 'Pelada') : 'Sem pelada vinculada' %>
+                    <% if (award.teamPhotoUrl) { %> • foto enviada<% } %>
+                  </span>
+                </div>
+                <div class="w-full sm:w-auto flex items-center gap-3">
+                  <button
+                    type="button"
+                    class="text-[12px] text-horriver-orange hover:underline"
+                    data-weekly-edit
+                    data-weekstart="<%= award.weekStart.toISOString().slice(0, 10) %>"
+                    data-best-id="<%= award.bestPlayerId || '' %>"
+                    data-match-id="<%= award.winningMatchId || '' %>"
+                    data-photo-url="<%= award.teamPhotoUrl || '' %>"
+                  >
+                    Editar
+                  </button>
+                  <form action="/admin/weekly-awards/<%= award.id %>/delete" method="POST" onsubmit="return confirm('Excluir destaque?');" class="w-full sm:w-auto">
+                    <button type="submit" class="w-full sm:w-auto px-2 py-1 rounded-full text-red-500 hover:text-red-300 min-h-[34px]">Excluir</button>
+                  </form>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+
+      <!-- Craque do mês -->
+      <div class="admin-panel rounded-2xl p-4 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+          <div class="space-y-1">
+            <h3 class="font-semibold text-lg text-horriver-light">Craque do Mês</h3>
+            <p id="monthlyFormHint" class="text-xs text-horriver-gray">
+              Escolha o craque mensal e ajuste um premio ja publicado quando precisar.
+            </p>
+          </div>
+          <span id="monthlyEditState" class="admin-edit-state hidden">Editando premio</span>
+        </div>
+        <form id="monthlyAwardForm" action="/admin/monthly-awards" method="POST" class="space-y-3" data-autosave="true" data-toast="Craque do mês salvo." autocomplete="off">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-horriver-gray">
+            <label class="flex flex-col gap-1">
+              Mês
+              <select id="monthlyAwardMonth" name="month" required class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light" data-default-month="<%= adminDefaultMonth %>">
+                <% for (let i = 1; i <= 12; i++) { %>
+                  <option value="<%= i %>" <%= i === adminDefaultMonth ? "selected" : "" %>><%= adminMonthNames[i - 1] %></option>
+                <% } %>
+              </select>
+            </label>
+            <label class="flex flex-col gap-1">
+              Ano
+              <input id="monthlyAwardYear" type="number" name="year" value="<%= adminDefaultYear %>" data-default-year="<%= adminDefaultYear %>" required class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light" />
+            </label>
+          </div>
+          <label class="flex flex-col gap-1 text-sm text-horriver-gray">
+            Craque
+            <select id="monthlyAwardCraque" name="craqueId" class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light">
+              <option value="">Nenhum</option>
+              <% players.forEach(p => { %>
+                <option value="<%= p.id %>"><%= p.name %></option>
+              <% }) %>
+            </select>
+          </label>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <button id="monthlySubmitButton" type="submit" class="w-full sm:flex-1 px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition">
+              Salvar craque do mês
+            </button>
+            <button
+              id="monthlyCancelEdit"
+              type="button"
+              class="hidden w-full sm:w-auto px-4 py-2 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
+            >
+              Cancelar edição
+            </button>
+          </div>
+        </form>
+        <% if (monthlyAwards.length > 0) { %>
+          <div class="border-t border-horriver-border/50 pt-3 space-y-2 text-xs text-horriver-gray">
+            <p class="font-semibold text-horriver-light">Últimos premiados</p>
+            <% monthlyAwards.forEach(award => { %>
+              <div class="admin-row flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between rounded-lg px-2 py-1">
+                <span><%= adminMonthNames[award.month - 1] || award.month %>/<%= award.year %> - <%= award.craque?.name || 'N/A' %></span>
+                <div class="w-full sm:w-auto flex items-center gap-3">
+                  <button
+                    type="button"
+                    class="text-[12px] text-horriver-orange hover:underline"
+                    data-monthly-edit
+                    data-month="<%= award.month %>"
+                    data-year="<%= award.year %>"
+                    data-player-id="<%= award.craqueId || '' %>"
+                  >
+                    Editar
+                  </button>
+                  <form action="/admin/monthly-awards/<%= award.id %>/delete" method="POST" onsubmit="return confirm('Excluir premiação?');" class="w-full sm:w-auto">
+                    <button type="submit" class="w-full sm:w-auto px-2 py-1 rounded-full text-red-500 hover:text-red-300 min-h-[34px]">Excluir</button>
+                  </form>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </section>
+
+  <!-- Premiação da temporada / Hall da Fama -->
+  <section class="pt-4 border-t border-horriver-border/60">
+    <div class="admin-panel rounded-2xl p-5 md:p-6 space-y-4">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
+            Premiação da temporada
+          </h2>
+          <p class="text-[11px] md:text-xs text-horriver-gray/80">
+            Cadastre os prêmios de fim de ano (melhor jogador, artilheiro, por posição, etc).
+          </p>
+        </div>
+        <a
+          href="/admin/premiacao"
+          class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-[11px] md:text-xs font-medium text-black hover:bg-orange-500 transition shadow-card-soft"
+        >
+          Gerenciar premiação da temporada
+        </a>
+      </div>
+
+      <%
+        const hasSeasonAwards =
+          typeof seasonAwards !== "undefined" &&
+          seasonAwards &&
+          seasonAwards.length;
+
+        let latestYear = null;
+        let latestAwards = [];
+        if (hasSeasonAwards) {
+          latestYear = seasonAwards[0].year;
+          latestAwards = seasonAwards.filter(a => a.year === latestYear);
+        }
+      %>
+
+      <% if (hasSeasonAwards && latestAwards.length) { %>
+        <div class="mt-2 space-y-3">
+          <p class="text-[11px] md:text-xs text-horriver-gray/80">
+            Campeões atuais da temporada
+            <span class="text-horriver-orange font-semibold"><%= latestYear %></span>:
+          </p>
+          <div class="overflow-x-auto text-[11px] md:text-xs max-h-64">
+            <table class="min-w-full border-collapse admin-table">
+              <thead>
+                <tr class="border-b border-horriver-border/60 text-horriver-gray/80">
+                  <th class="py-2 pr-3 text-left font-normal">Categoria</th>
+                  <th class="py-2 pr-3 text-left font-normal">Jogador</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% latestAwards.forEach(a => { %>
+                  <tr class="border-b border-horriver-border/40 last:border-0">
+                    <td class="py-2 pr-3 text-horriver-gray/90">
+                      <%= a.category %>
+                    </td>
+                    <td class="py-2 pr-3 text-horriver-light">
+                      <% if (a.player) { %>
+                        <%= a.player.name %><% if (a.player.nickname) { %> (<%= a.player.nickname %>)<% } %>
+                      <% } else { %>
+                        -
+                      <% } %>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      <% } else { %>
+        <p class="text-[11px] md:text-xs text-horriver-gray/80">
+          Nenhuma premiação cadastrada ainda. Clique em "Gerenciar premiação da temporada" para começar.
+        </p>
+      <% } %>
+    </div>
+  </section>
+
+  <!-- Jogadores -->
+  <section id="jogadores" class="scroll-mt-16 space-y-4">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+      <h2 class="font-title text-xl text-horriver-orange">Jogadores</h2>
+      <p class="text-xs text-horriver-gray">Cadastrar, editar ou excluir.</p>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- novo jogador -->
+      <div class="admin-panel rounded-2xl p-4 space-y-3">
+        <h3 class="font-semibold text-lg text-horriver-light">Novo Jogador</h3>
+        <form action="/admin/players<%= typeof csrfToken !== 'undefined' && csrfToken ? '?_csrf=' + encodeURIComponent(csrfToken) : '' %>" method="POST" enctype="multipart/form-data" class="space-y-3 text-sm text-horriver-gray" data-autosave="true" data-toast="Jogador adicionado.">
+          <label class="flex flex-col gap-1">
+            Nome completo
+            <input type="text" name="name" required class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light" />
+          </label>
+          <label class="flex flex-col gap-1">
+            Apelido (opcional)
+            <input type="text" name="nickname" class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light" />
+          </label>
+          <label class="flex flex-col gap-1">
+            Telefone (opcional)
+            <input type="tel" name="whatsapp" placeholder="21999998888" class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light" />
+            <span class="text-[11px] text-horriver-gray">Somente números; +55 adicionado automaticamente.</span>
+          </label>
+          <label class="flex flex-col gap-1">
+            Posição principal
+            <select name="position" required class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light">
+              <option value="GOL">Goleiro</option>
+              <option value="ZAG">Zagueiro</option>
+              <option value="MEI">Meio-campo</option>
+              <option value="ATA">Atacante</option>
+            </select>
+          </label>
+          <label class="flex flex-col gap-1">
+            Foto
+            <input type="file" name="photo" class="text-sm" />
+          </label>
+          <button type="submit" class="w-full px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition">Adicionar</button>
+        </form>
+      </div>
+
+      <!-- lista -->
+      <div class="lg:col-span-2 admin-panel rounded-2xl p-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-2">
+          <h3 class="font-semibold text-lg text-horriver-light">Jogadores cadastrados</h3>
+          <span class="text-xs text-horriver-gray"><%= players.length %> total</span>
+        </div>
+        <div class="mb-2 space-y-2">
+          <input
+            id="playerSearch"
+            type="text"
+            placeholder="Buscar jogador..."
+            class="w-full bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light text-xs"
+          />
+          <div class="flex flex-wrap gap-2 text-[11px]">
+            <button type="button" class="player-filter px-3 py-1 rounded-full border border-horriver-border text-horriver-light bg-horriver-orange text-black" data-pos="all">Todos</button>
+            <button type="button" class="player-filter px-3 py-1 rounded-full border border-horriver-border text-horriver-light" data-pos="GOL">GOL</button>
+            <button type="button" class="player-filter px-3 py-1 rounded-full border border-horriver-border text-horriver-light" data-pos="ZAG">ZAG</button>
+            <button type="button" class="player-filter px-3 py-1 rounded-full border border-horriver-border text-horriver-light" data-pos="MEI">MEI</button>
+            <button type="button" class="player-filter px-3 py-1 rounded-full border border-horriver-border text-horriver-light" data-pos="ATA">ATA</button>
+          </div>
+        </div>
+        <div class="space-y-2 max-h-[520px] overflow-y-auto pr-1 text-sm">
+          <% if (players.length > 0) { %>
+            <% players.forEach(player => { %>
+              <div class="admin-row flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl px-3 py-2" data-player-item>
+                <div class="w-full sm:w-auto flex items-center gap-3">
+                  <img src="<%= player.photoUrl || '/img/logo-64x64.svg' %>" class="w-10 h-10 rounded-full object-cover bg-horriver-dark" />
+                  <div>
+                    <p class="text-horriver-light font-semibold"><%= player.name %></p>
+                    <% if (player.nickname) { %><p class="text-[11px] text-horriver-gray">"<%= player.nickname %>"</p><% } %>
+                  </div>
+                </div>
+                <div class="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-3">
+                  <span class="text-[11px] px-2 py-1 rounded-full bg-horriver-dark text-horriver-light uppercase" data-player-position="<%= player.position %>"><%= player.position %></span>
+                  <a href="/admin/players/<%= player.id %>/edit" class="inline-flex items-center min-h-[34px] text-[12px] text-horriver-orange hover:underline">Editar</a>
+                  <form action="/admin/players/<%= player.id %>/delete" method="POST" onsubmit="return confirm('Excluir jogador e todo o histórico?');">
+                    <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                    <% } %>
+                    <button type="submit" class="px-2 py-1 rounded-full text-red-500 hover:text-red-300 text-[12px] min-h-[34px]">Excluir</button>
+                  </form>
+                </div>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <p class="text-horriver-gray">Nenhum jogador cadastrado.</p>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Radar do mês + Votacao -->
+  <section class="grid grid-cols-1 xl:grid-cols-[1.35fr,0.85fr] gap-4">
+    <div class="admin-panel rounded-2xl p-4 md:p-5 space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+        <div>
+          <h2 class="font-title text-xl text-horriver-light">Radar do mês</h2>
+          <p class="text-xs text-horriver-gray/76">Leitura rápida do que está puxando a narrativa do período atual.</p>
+        </div>
+        <span class="text-[11px] uppercase tracking-[0.18em] text-horriver-gray/72">Mês: <%= monthLabel %></span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="admin-mini-panel rounded-2xl p-4 space-y-3">
+          <div class="space-y-1">
+            <span class="text-[10px] uppercase tracking-[0.18em] text-horriver-gray/72">Top 5</span>
+            <p class="text-sm text-horriver-light font-semibold">Artilheiros do mês</p>
+          </div>
+          <% if (monthTopGoals && monthTopGoals.length) { %>
+            <div class="admin-ranking-list">
+              <% monthTopGoals.forEach((row, idx) => { %>
+                <div class="admin-ranking-row">
+                  <span><%= idx + 1 %>. <%= row.player.name %></span>
+                  <span class="text-horriver-orange font-semibold"><%= row.goals || 0 %></span>
+                </div>
+              <% }) %>
+            </div>
+          <% } else { %>
+            <p class="admin-ranking-empty">Sem dados neste mês.</p>
+          <% } %>
+        </div>
+
+        <div class="admin-mini-panel rounded-2xl p-4 space-y-3">
+          <div class="space-y-1">
+            <span class="text-[10px] uppercase tracking-[0.18em] text-horriver-gray/72">Top 5</span>
+            <p class="text-sm text-horriver-light font-semibold">Assistências do mês</p>
+          </div>
+          <% if (monthTopAssists && monthTopAssists.length) { %>
+            <div class="admin-ranking-list">
+              <% monthTopAssists.forEach((row, idx) => { %>
+                <div class="admin-ranking-row">
+                  <span><%= idx + 1 %>. <%= row.player.name %></span>
+                  <span class="text-horriver-orange font-semibold"><%= row.assists || 0 %></span>
+                </div>
+              <% }) %>
+            </div>
+          <% } else { %>
+            <p class="admin-ranking-empty">Sem dados neste mês.</p>
+          <% } %>
+        </div>
+
+        <div class="admin-mini-panel rounded-2xl p-4 space-y-3">
+          <div class="space-y-1">
+            <span class="text-[10px] uppercase tracking-[0.18em] text-horriver-gray/72">Top 5</span>
+            <p class="text-sm text-horriver-light font-semibold">Notas do mês</p>
+          </div>
+          <% const fmtRating = (val) => (val || val === 0 ? Number(val).toFixed(2).replace(".", ",") : "0,00"); %>
+          <% if (monthTopRatings && monthTopRatings.length) { %>
+            <div class="admin-ranking-list">
+              <% monthTopRatings.forEach((row, idx) => { %>
+                <div class="admin-ranking-row">
+                  <span><%= idx + 1 %>. <%= row.player.name %></span>
+                  <span class="text-horriver-orange font-semibold"><%= fmtRating(row.avgRating) %></span>
+                </div>
+              <% }) %>
+            </div>
+          <% } else { %>
+            <p class="admin-ranking-empty">Sem dados neste mês.</p>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Votacao do mês -->
+    <section class="scroll-mt-16">
+      <div class="admin-focus-panel rounded-2xl p-5 h-full flex flex-col justify-between gap-4">
+        <div class="space-y-3">
+          <span class="inline-flex items-center gap-2 rounded-full border border-horriver-orange/25 bg-horriver-orange/10 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-[#ffb685]">
+            Votação do mês
+          </span>
+          <div>
+            <h2 class="font-title text-2xl text-horriver-orange">Painel da votação</h2>
+            <p class="mt-2 text-sm leading-relaxed text-horriver-gray/84">Acompanhe os classificados do mês, gere links e publique a disputa do Top 10 com menos atrito.</p>
+          </div>
+          <div class="flex flex-wrap gap-2 text-[11px]">
+            <span class="px-3 py-1 rounded-full border border-white/10 bg-white/[0.03] text-horriver-gray">Top 10 do mês</span>
+            <span class="px-3 py-1 rounded-full border border-white/10 bg-white/[0.03] text-horriver-gray">Minimo 2 peladas</span>
+          </div>
+        </div>
+        <a
+          href="/admin/monthly-vote"
+          class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-black text-xs font-semibold hover:bg-orange-500 transition"
+        >
+          Abrir painel
+        </a>
+      </div>
+    </section>
+  </section>
+
+  <!-- Ferramentas -->
+  <section class="admin-panel rounded-2xl p-5 md:p-6 space-y-5">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <div>
+        <h2 class="font-title text-xl text-horriver-light">Ferramentas</h2>
+        <p class="text-xs text-horriver-gray/80">Relatórios em PDF e manutencao do sistema.</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <!-- PDF -->
+      <div class="space-y-3">
+        <p class="text-[11px] uppercase tracking-[0.16em] text-horriver-gray/72">Relatórios em PDF</p>
+        <form
+          action="/admin/reports/pdf"
+          method="GET"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="rounded-[1.4rem] border border-horriver-border/90 bg-black/20 px-4 py-4 space-y-3"
+        >
+          <div class="grid grid-cols-1 sm:grid-cols-[1fr,auto] gap-3 items-end">
+            <label class="flex flex-col gap-1.5 text-sm text-horriver-gray">
+              Ranking
+              <select
+                name="reportKey"
+                class="bg-horriver-dark border border-horriver-border rounded-xl px-3 py-2.5 text-horriver-light"
+              >
+                <% (pdfGeneratorReports || []).forEach((report, idx) => { %>
+                  <option value="<%= report.key %>" <%= idx === 0 ? "selected" : "" %>><%= report.title %></option>
+                <% }) %>
+              </select>
+            </label>
+            <label class="flex flex-col gap-1.5 text-sm text-horriver-gray">
+              Quantidade
+              <select
+                name="limit"
+                class="bg-horriver-dark border border-horriver-border rounded-xl px-3 py-2.5 text-horriver-light"
+              >
+                <% (pdfLimitOptions || []).forEach((option, idx) => { %>
+                  <option value="<%= option.value %>" <%= idx === 0 ? "selected" : "" %>><%= option.label %></option>
+                <% }) %>
+              </select>
+            </label>
+          </div>
+          <div class="flex items-center gap-2">
+            <button
+              type="submit"
+              id="pdfGenerateBtn"
+              class="inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              Gerar PDF
+            </button>
+            <a
+              href="/admin"
+              class="inline-flex items-center justify-center px-5 py-2.5 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
+            >
+              Limpar
+            </a>
+          </div>
+        </form>
+      </div>
+
+      <!-- OVR -->
+      <div class="space-y-3">
+        <p class="text-[11px] uppercase tracking-[0.16em] text-horriver-gray/72">Manutencao do sistema</p>
+        <div class="rounded-[1.4rem] border border-horriver-border/90 bg-black/20 px-4 py-4 space-y-2">
+          <p class="text-sm text-horriver-gray/84">Recalcula o OVR histórico de todos os jogadores usando todas as peladas registradas.</p>
+          <form
+            method="POST"
+            action="/admin/recalculate-overall-historical"
+            class="inline"
+            data-toast="OVR histórico recalculado com sucesso."
+            onsubmit="if(!confirm('Recalcular o OVR histórico de todos os jogadores usando TODAS as peladas? Isso sobrescreve o overallDynamic atual de cada jogador.')) return false; var btn=this.querySelector('[type=submit]'); btn.disabled=true; btn.textContent='Recalculando...';"
+          >
+            <button
+              type="submit"
+              class="px-4 py-2 rounded-full border border-horriver-orange text-xs text-horriver-orange hover:bg-horriver-orange hover:text-horriver-bg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Recalcular OVR histórico
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+  // Define data padrão no formulário de nova pelada
+  (function () {
+    const form = document.getElementById("newMatchForm");
+    const dateInput = document.getElementById("playedDate");
+    if (!form || !dateInput) return;
+
+    const setDefaultDate = () => {
+      const now = new Date();
+      const isoDate = now.toISOString().slice(0, 10);
+      if (!dateInput.value) dateInput.value = isoDate;
+    };
+
+    setDefaultDate();
+  })();
+</script>
+
+<script src="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.js"></script>
+<script>
+  (function () {
+    const weeklyForm = document.getElementById("weeklyForm");
+    const weeklyWeekStart = document.getElementById("weeklyWeekStart");
+    const weeklyBestPlayer = document.getElementById("weeklyBestPlayerId");
+    const weeklyWinningMatch = document.getElementById("weeklyWinningMatchId");
+    const weeklyHint = document.getElementById("weeklyFormHint");
+    const weeklyEditState = document.getElementById("weeklyEditState");
+    const weeklySubmitButton = document.getElementById("weeklySubmitButton");
+    const weeklyCancelButton = document.getElementById("weeklyCancelEdit");
+    const weeklyCurrentPhotoCard = document.getElementById("weeklyCurrentPhotoCard");
+    const weeklyCurrentPhotoPreview = document.getElementById("weeklyCurrentPhotoPreview");
+
+    const teamPhotoInput = document.getElementById("weeklyTeamPhotoInput");
+    const teamPhotoCropContainer = document.getElementById("teamPhotoCropContainer");
+    const teamPhotoCropImage = document.getElementById("teamPhotoCropImage");
+    const applyTeamPhotoCrop = document.getElementById("applyTeamPhotoCrop");
+    const teamPhotoCropDone = document.getElementById("teamPhotoCropDone");
+    const teamPhotoCropError = document.getElementById("teamPhotoCropError");
+
+    const monthlyForm = document.getElementById("monthlyAwardForm");
+    const monthlyMonth = document.getElementById("monthlyAwardMonth");
+    const monthlyYear = document.getElementById("monthlyAwardYear");
+    const monthlyCraque = document.getElementById("monthlyAwardCraque");
+    const monthlyHint = document.getElementById("monthlyFormHint");
+    const monthlyEditState = document.getElementById("monthlyEditState");
+    const monthlySubmitButton = document.getElementById("monthlySubmitButton");
+    const monthlyCancelButton = document.getElementById("monthlyCancelEdit");
+
+    const weeklyCreateHint =
+      "Publique o craque da pelada e a foto do time vencedor da semana.";
+    const weeklyEditHint =
+      "Edite um destaque já publicado. Se não enviar nova foto, a imagem atual será mantida.";
+    const monthlyCreateHint =
+      "Escolha o craque mensal e ajuste um premio ja publicado quando precisar.";
+    const monthlyEditHint =
+      "Edite um craque do mês já lançado e salve a atualização no mesmo formulario.";
+
+    let cropper = null;
+    let currentObjectUrl = null;
+    let originalFileName = "time-vencedor.jpg";
+    let weeklySubmitInFlight = false;
+
+    const setCropError = (message = "") => {
+      if (!teamPhotoCropError) return;
+      teamPhotoCropError.textContent = message;
+      teamPhotoCropError.classList.toggle("hidden", !message);
+    };
+
+    const destroyCropper = () => {
+      if (cropper) {
+        cropper.destroy();
+        cropper = null;
+      }
+      if (currentObjectUrl) {
+        URL.revokeObjectURL(currentObjectUrl);
+        currentObjectUrl = null;
+      }
+    };
+
+    const resetCropInterface = ({ clearInput = false } = {}) => {
+      destroyCropper();
+      teamPhotoCropContainer?.classList.add("hidden");
+      teamPhotoCropImage?.removeAttribute("src");
+      teamPhotoCropDone?.classList.add("hidden");
+      setCropError("");
+      if (clearInput && teamPhotoInput) {
+        teamPhotoInput.value = "";
+      }
+    };
+
+    const showCurrentWeeklyPhoto = (url = "") => {
+      if (!weeklyCurrentPhotoCard || !weeklyCurrentPhotoPreview) return;
+      if (!url) {
+        weeklyCurrentPhotoCard.classList.add("hidden");
+        weeklyCurrentPhotoPreview.removeAttribute("src");
+        return;
+      }
+      weeklyCurrentPhotoPreview.src = url;
+      weeklyCurrentPhotoCard.classList.remove("hidden");
+    };
+
+    const applyMonthlyDefaults = () => {
+      if (monthlyMonth?.dataset.defaultMonth) {
+        monthlyMonth.value = String(monthlyMonth.dataset.defaultMonth);
+      }
+      if (monthlyYear?.dataset.defaultYear) {
+        monthlyYear.value = String(monthlyYear.dataset.defaultYear);
+      }
+    };
+
+    const setWeeklyCreateMode = ({ resetForm = false } = {}) => {
+      if (resetForm && weeklyForm) {
+        weeklyForm.reset();
+      }
+      if (weeklyHint) weeklyHint.textContent = weeklyCreateHint;
+      weeklyEditState?.classList.add("hidden");
+      if (weeklySubmitButton) {
+        weeklySubmitButton.textContent = "Salvar destaque";
+      }
+      weeklyCancelButton?.classList.add("hidden");
+      showCurrentWeeklyPhoto("");
+      resetCropInterface({ clearInput: resetForm });
+    };
+
+    const setWeeklyEditMode = ({ weekStart, bestId, matchId, photoUrl }) => {
+      if (weeklyWeekStart) weeklyWeekStart.value = weekStart || "";
+      if (weeklyBestPlayer) weeklyBestPlayer.value = bestId || "";
+      if (weeklyWinningMatch) weeklyWinningMatch.value = matchId || "";
+      if (weeklyHint) weeklyHint.textContent = weeklyEditHint;
+      weeklyEditState?.classList.remove("hidden");
+      if (weeklySubmitButton) {
+        weeklySubmitButton.textContent = "Salvar alterações";
+      }
+      weeklyCancelButton?.classList.remove("hidden");
+      showCurrentWeeklyPhoto(photoUrl || "");
+      resetCropInterface({ clearInput: true });
+      weeklyForm?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+
+    const setMonthlyCreateMode = ({ resetForm = false } = {}) => {
+      if (resetForm && monthlyForm) {
+        monthlyForm.reset();
+      }
+      applyMonthlyDefaults();
+      if (monthlyCraque) monthlyCraque.value = "";
+      if (monthlyHint) monthlyHint.textContent = monthlyCreateHint;
+      monthlyEditState?.classList.add("hidden");
+      if (monthlySubmitButton) {
+        monthlySubmitButton.textContent = "Salvar craque do mês";
+      }
+      monthlyCancelButton?.classList.add("hidden");
+    };
+
+    const setMonthlyEditMode = ({ month, year, playerId }) => {
+      if (monthlyMonth) monthlyMonth.value = String(month || "");
+      if (monthlyYear) monthlyYear.value = String(year || "");
+      if (monthlyCraque) monthlyCraque.value = String(playerId || "");
+      if (monthlyHint) monthlyHint.textContent = monthlyEditHint;
+      monthlyEditState?.classList.remove("hidden");
+      if (monthlySubmitButton) {
+        monthlySubmitButton.textContent = "Salvar alterações";
+      }
+      monthlyCancelButton?.classList.remove("hidden");
+      monthlyForm?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+
+    const buildCroppedFileName = (name) => {
+      const cleaned = String(name || "time-vencedor")
+        .replace(/\.[^.]+$/, "")
+        .trim();
+      return `${cleaned || "time-vencedor"}-cortada.jpg`;
+    };
+
+    const applyCropToInput = () =>
+      new Promise((resolve, reject) => {
+        if (!teamPhotoInput?.files?.length || !cropper) {
+          resolve(false);
+          return;
+        }
+
+        const canvas = cropper.getCroppedCanvas({
+          width: 1280,
+          height: 720,
+          imageSmoothingEnabled: true,
+          imageSmoothingQuality: "high",
+        });
+
+        if (!canvas) {
+          resolve(false);
+          return;
+        }
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error("Não foi possível gerar o corte da imagem."));
+              return;
+            }
+
+            const croppedFile = new File([blob], buildCroppedFileName(originalFileName), {
+              type: "image/jpeg",
+              lastModified: Date.now(),
+            });
+
+            const transfer = new DataTransfer();
+            transfer.items.add(croppedFile);
+            teamPhotoInput.files = transfer.files;
+            teamPhotoCropDone?.classList.remove("hidden");
+            setCropError("");
+            resolve(true);
+          },
+          "image/jpeg",
+          0.92
+        );
+      });
+
+    teamPhotoInput?.addEventListener("change", () => {
+      const file = teamPhotoInput.files?.[0];
+      resetCropInterface();
+
+      if (!file) {
+        return;
+      }
+
+      if (!file.type.startsWith("image/")) {
+        setCropError("Selecione um arquivo de imagem valido para recortar.");
+        return;
+      }
+
+      if (typeof window.Cropper === "undefined") {
+        setCropError(
+          "O editor de corte não carregou agora. Você ainda pode enviar a imagem original."
+        );
+        return;
+      }
+
+      originalFileName = file.name || "time-vencedor.jpg";
+      currentObjectUrl = URL.createObjectURL(file);
+      teamPhotoCropImage.onload = () => {
+        if (cropper) {
+          cropper.destroy();
+        }
+        cropper = new window.Cropper(teamPhotoCropImage, {
+          aspectRatio: 16 / 9,
+          viewMode: 1,
+          autoCropArea: 1,
+          dragMode: "move",
+          responsive: true,
+          background: false,
+        });
+      };
+      teamPhotoCropImage.src = currentObjectUrl;
+      teamPhotoCropContainer?.classList.remove("hidden");
+    });
+
+    applyTeamPhotoCrop?.addEventListener("click", async () => {
+      try {
+        await applyCropToInput();
+      } catch (error) {
+        setCropError(error?.message || "Não foi possível aplicar o corte agora.");
+      }
+    });
+
+    weeklyForm?.addEventListener("submit", async (event) => {
+      if (weeklySubmitInFlight) {
+        return;
+      }
+      if (!teamPhotoInput?.files?.length || !cropper) {
+        return;
+      }
+
+      event.preventDefault();
+      try {
+        await applyCropToInput();
+        weeklySubmitInFlight = true;
+        weeklyForm.requestSubmit(event.submitter || undefined);
+      } catch (error) {
+        setCropError(error?.message || "Não foi possível preparar a imagem antes de salvar.");
+      }
+    });
+
+    weeklyCancelButton?.addEventListener("click", () => {
+      weeklySubmitInFlight = false;
+      setWeeklyCreateMode({ resetForm: true });
+    });
+
+    monthlyCancelButton?.addEventListener("click", () => {
+      setMonthlyCreateMode({ resetForm: true });
+    });
+
+    document.querySelectorAll("[data-weekly-edit]").forEach((button) => {
+      button.addEventListener("click", () => {
+        setWeeklyEditMode({
+          weekStart: button.dataset.weekstart || "",
+          bestId: button.dataset.bestId || "",
+          matchId: button.dataset.matchId || "",
+          photoUrl: button.dataset.photoUrl || "",
+        });
+      });
+    });
+
+    document.querySelectorAll("[data-monthly-edit]").forEach((button) => {
+      button.addEventListener("click", () => {
+        setMonthlyEditMode({
+          month: button.dataset.month || "",
+          year: button.dataset.year || "",
+          playerId: button.dataset.playerId || "",
+        });
+      });
+    });
+
+    setWeeklyCreateMode();
+    setMonthlyCreateMode();
+    window.addEventListener("pageshow", () => {
+      weeklySubmitInFlight = false;
+      applyMonthlyDefaults();
+    });
+  })();
+</script>
+
+
+<script>
+  (function () {
+    const matchSearch = document.getElementById("matchSearch");
+    const matchItems = Array.from(document.querySelectorAll("[data-match-item]"));
+
+    const applyMatchFilter = () => {
+      const term = (matchSearch?.value || "").toLowerCase().trim();
+      matchItems.forEach((item) => {
+        const hay = item.textContent.toLowerCase();
+        item.classList.toggle("hidden", term && !hay.includes(term));
+      });
+    };
+
+    if (matchSearch) {
+      matchSearch.addEventListener("input", applyMatchFilter);
+    }
+
+    const playerSearch = document.getElementById("playerSearch");
+    const playerItems = Array.from(document.querySelectorAll("[data-player-item]"));
+    const playerFilters = Array.from(document.querySelectorAll(".player-filter"));
+    let activePos = "all";
+
+    const applyPlayerFilters = () => {
+      const term = (playerSearch?.value || "").toLowerCase().trim();
+      playerItems.forEach((item) => {
+        const hay = item.textContent.toLowerCase();
+        const pos = item.querySelector("[data-player-position]")?.getAttribute("data-player-position") || "";
+        const matchTerm = !term || hay.includes(term);
+        const matchPos = activePos === "all" || pos === activePos;
+        item.classList.toggle("hidden", !(matchTerm && matchPos));
+      });
+    };
+
+    playerFilters.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        activePos = btn.dataset.pos || "all";
+        playerFilters.forEach((b) => b.classList.remove("bg-horriver-orange", "text-black"));
+        btn.classList.add("bg-horriver-orange", "text-black");
+        applyPlayerFilters();
+      });
+    });
+
+    if (playerSearch) {
+      playerSearch.addEventListener("input", applyPlayerFilters);
+    }
+  })();
+</script>
+
+<script>
+  (function () {
+    const pdfBtn = document.getElementById("pdfGenerateBtn");
+    if (pdfBtn) {
+      pdfBtn.closest("form").addEventListener("submit", function () {
+        pdfBtn.disabled = true;
+        pdfBtn.textContent = "Gerando...";
+        setTimeout(function () {
+          pdfBtn.disabled = false;
+          pdfBtn.textContent = "Gerar PDF";
+        }, 5000);
+      });
+    }
+  })();
+</script>
+
+

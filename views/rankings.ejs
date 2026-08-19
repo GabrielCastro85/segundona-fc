@@ -1,0 +1,1850 @@
+<%
+  // ===============================
+  // Helpers e preparação de dados
+  // ===============================
+  const fmtDate = (d) =>
+    d ? new Date(d).toLocaleDateString("pt-BR", { timeZone: 'America/Sao_Paulo' }) : "-";
+
+  const fmtRating = (val) => {
+    if (!val && val !== 0) return "0,00";
+    const num = Number(val);
+    if (Number.isNaN(num)) return "0,00";
+    return num.toFixed(2).replace(".", ",");
+  };
+  const fmtRating3 = fmtRating;
+
+  const safeArr = (arr) => (Array.isArray(arr) ? arr : []);
+
+  const goals   = safeArr(rankings && rankings.goals);
+  const assists = safeArr(rankings && rankings.assists);
+  const saves   = safeArr(rankings && rankings.saves);
+  const ga      = safeArr(rankings && rankings.ga);
+  const ratings = safeArr(rankings && rankings.ratings);
+  const matches = safeArr(rankings && rankings.matches);
+  const photos  = safeArr(rankings && rankings.photos);
+
+  // novos rankings calculados no backend
+  const overall = safeArr(rankings && rankings.overall); // overallScore
+  const last10  = safeArr(rankings && rankings.last10);  // last10Score
+
+  const weeklyAwards  = safeArr(rankings && rankings.weeklyAwards);
+  const monthlyAwards = safeArr(rankings && rankings.monthlyAwards);
+  const colorWins = safeArr(rankings && rankings.colorWins);
+
+  const monthNames = [
+    "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+    "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
+  ];
+
+  const selYear = (typeof year === "string" && year === "all")
+    ? "all"
+    : Number(year || new Date().getFullYear());
+
+  const selMonth = typeof month !== "undefined" ? Number(month) : 0; // 0 = todos
+  const selPos = typeof selPosition !== "undefined" ? selPosition : "all";
+
+  const posLabel = (p) => {
+    if (!p || p === "all") return "Todas";
+    return p;
+  };
+
+  const periodLabel = () => {
+    if (selYear === "all") return "Geral (todos os anos)";
+    if (selMonth === 0) return `Ano de ${selYear}`;
+    const mName = monthNames[(selMonth || 1) - 1] || "";
+    return `${mName} / ${selYear}`;
+  };
+
+  const topRowClass = (idx) => {
+    if (idx === 0) return "rk-row-gold";
+    if (idx === 1) return "rk-row-silver";
+    if (idx === 2) return "rk-row-bronze";
+    return "";
+  };
+
+  const colorMeta = {
+    Amarelo: "border-yellow-400/40 text-yellow-300 bg-yellow-400/10",
+    Azul: "border-blue-400/40 text-blue-300 bg-blue-400/10",
+    Preto: "border-slate-400/40 text-slate-200 bg-slate-500/10",
+    Vermelho: "border-red-400/40 text-red-300 bg-red-500/10",
+  };
+  const colorBoxClass = (name) =>
+    colorMeta[name] || "border-horriver-border text-horriver-light bg-white/5";
+  const leaderName = (row) =>
+    row && row.player
+      ? `${row.player.name}${row.player.nickname ? ` (${row.player.nickname})` : ""}`
+      : "Sem dados";
+  const playerDisplayName = (row) =>
+    row && row.player
+      ? `${row.player.name}${row.player.nickname ? ` (${row.player.nickname})` : ""}`
+      : "-";
+  const escapeHtml = (value) =>
+    String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  const medalMeta = [
+    { label: "1", title: "Ouro", cls: "rk-podium-card--gold" },
+    { label: "2", title: "Prata", cls: "rk-podium-card--silver" },
+    { label: "3", title: "Bronze", cls: "rk-podium-card--bronze" },
+  ];
+  const renderRankingPodium = (rows, metrics) => {
+    const top = safeArr(rows).slice(0, 3);
+    if (!top.length) return "";
+    const cards = top.map((row, idx) => {
+      const meta = medalMeta[idx] || medalMeta[2];
+      const metricHtml = safeArr(metrics).map((metric, metricIdx) => {
+        const raw = typeof metric.value === "function" ? metric.value(row) : row[metric.key];
+        const value = raw === null || raw === undefined || raw === "" ? "0" : raw;
+        return `
+          <span class="rk-podium-metric ${metricIdx === 0 ? "rk-podium-metric--primary" : ""}">
+            <span>${escapeHtml(metric.label)}</span>
+            <strong>${escapeHtml(value)}</strong>
+          </span>
+        `;
+      }).join("");
+      return `
+        <article class="rk-podium-card ${meta.cls}">
+          <div class="rk-podium-rank">
+            <span>${meta.label}</span>
+          </div>
+          <div class="rk-podium-body">
+            <span class="rk-podium-medal">${meta.title}</span>
+            <strong>${escapeHtml(playerDisplayName(row))}</strong>
+            <span>${escapeHtml(row.player?.position || "-")}</span>
+          </div>
+          <div class="rk-podium-metrics">
+            ${metricHtml}
+          </div>
+        </article>
+      `;
+    }).join("");
+    return `<div class="rk-podium">${cards}</div>`;
+  };
+  const topGoal = goals[0] || null;
+  const topAssist = assists[0] || null;
+  const topRating = ratings[0] || null;
+  const topOverall = overall[0] || null;
+  const pillClass = "inline-flex items-center gap-2 rounded-full border border-horriver-border bg-white/[0.04] px-3 py-2 text-[11px] leading-none text-horriver-light";
+  const accentPillClass = "inline-flex items-center gap-2 rounded-full border border-horriver-orange/30 bg-horriver-orange/10 px-3 py-2 text-[11px] leading-none text-horriver-light";
+  const emptyStateClass = "rounded-[1.5rem] border border-dashed border-horriver-border bg-gradient-to-br from-horriver-orange/8 via-black/30 to-black/40 px-5 py-5";
+  const emptyEyebrowClass = "inline-flex items-center rounded-full border border-horriver-orange/20 bg-horriver-orange/10 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-[#ffb685]";
+
+  const teamLabelPrefix = (typeof brand !== "undefined" && brand.teamPrefix) ? brand.teamPrefix : "Time";
+  const sponsorNameByLabel = {
+    Amarelo: `${teamLabelPrefix} 1`,
+    Vermelho: `${teamLabelPrefix} 2`,
+    Azul: `${teamLabelPrefix} 3`,
+    Preto: `${teamLabelPrefix} 4`,
+  };
+  const colorDisplayName = (name) => sponsorNameByLabel[name] || name;
+%>
+
+<style>
+  /* Scroll mais discreto dentro dos cards de ranking */
+  .rk-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.7) transparent;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .rk-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .rk-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .rk-scroll::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.6);
+    border-radius: 999px;
+  }
+
+  /* Destaques para top 3 */
+  .rk-row-gold {
+    background:
+      linear-gradient(90deg, rgba(250, 204, 21, 0.2), rgba(250, 204, 21, 0.06) 44%, rgba(15, 23, 42, 0.2)),
+      rgba(250, 204, 21, 0.04);
+  }
+  .rk-row-silver {
+    background:
+      linear-gradient(90deg, rgba(203, 213, 225, 0.18), rgba(203, 213, 225, 0.055) 44%, rgba(15, 23, 42, 0.2)),
+      rgba(203, 213, 225, 0.035);
+  }
+  .rk-row-bronze {
+    background:
+      linear-gradient(90deg, rgba(251, 146, 60, 0.16), rgba(251, 146, 60, 0.05) 44%, rgba(15, 23, 42, 0.2)),
+      rgba(251, 146, 60, 0.03);
+  }
+
+  .rk-row-gold td:first-child,
+  .rk-row-silver td:first-child,
+  .rk-row-bronze td:first-child {
+    font-weight: 700;
+  }
+
+  .rk-row-gold td:first-child {
+    color: #facc15;
+  }
+
+  .rk-row-silver td:first-child {
+    color: #e2e8f0;
+  }
+
+  .rk-row-bronze td:first-child {
+    color: #fb923c;
+  }
+
+  .rk-scroll table {
+    min-width: 520px;
+    table-layout: fixed;
+  }
+
+  .rk-scroll th,
+  .rk-scroll td {
+    vertical-align: middle;
+  }
+
+  .rk-scroll th:nth-child(1),
+  .rk-scroll td:nth-child(1) {
+    width: 32px;
+  }
+
+  .rk-scroll th:nth-child(2),
+  .rk-scroll td:nth-child(2) {
+    width: 128px;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .rk-scroll th:not(:nth-child(2)),
+  .rk-scroll td:not(:nth-child(2)) {
+    white-space: nowrap;
+  }
+
+  .rk-scroll table:has(th:nth-child(8)) {
+    min-width: 680px;
+  }
+
+  .rk-anchor {
+    scroll-margin-top: 88px;
+  }
+
+  .rk-jump-nav {
+    position: sticky;
+    top: 72px;
+    z-index: 25;
+    display: block;
+    margin: 0.25rem 0 1rem;
+    padding: 0.7rem 0;
+    border-block: 1px solid rgba(148, 163, 184, 0.14);
+    background: rgba(5, 5, 9, 0.82);
+    backdrop-filter: blur(14px);
+  }
+
+  .rk-jump-nav__scroller {
+    display: flex;
+    gap: 0.55rem;
+    overflow-x: auto;
+    padding: 0.15rem 0.1rem 0.2rem;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .rk-jump-nav__scroller::-webkit-scrollbar {
+    display: none;
+  }
+
+  .rk-jump-nav a {
+    display: inline-flex;
+    min-height: 2.15rem;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    background: rgba(255, 255, 255, 0.035);
+    padding: 0.5rem 0.8rem;
+    color: rgba(245, 245, 245, 0.86);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    white-space: nowrap;
+    transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+  }
+
+  .rk-jump-nav a:hover {
+    border-color: rgba(255, 122, 26, 0.48);
+    color: #fff7f2;
+  }
+
+  .rk-jump-nav a.is-active {
+    border-color: rgba(255, 122, 26, 0.76);
+    background:
+      radial-gradient(circle at top, rgba(255, 122, 26, 0.28), transparent 70%),
+      rgba(255, 122, 26, 0.16);
+    color: #fff7f2;
+    box-shadow: 0 8px 18px rgba(255, 122, 26, 0.12);
+  }
+
+  .rk-podium {
+    display: grid;
+    grid-template-columns: 1fr 1.12fr 1fr;
+    align-items: stretch;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .rk-podium-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    gap: 0.72rem 0.78rem;
+    overflow: hidden;
+    border-radius: 1rem;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    padding: 0.86rem;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018)),
+      rgba(0, 0, 0, 0.2);
+  }
+
+  .rk-podium-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.72;
+  }
+
+  .rk-podium-card--gold {
+    order: 2;
+    min-height: 8.6rem;
+    border-color: rgba(250, 204, 21, 0.46);
+  }
+
+  .rk-podium-card--silver {
+    order: 1;
+    margin-top: 1.35rem;
+    border-color: rgba(203, 213, 225, 0.36);
+  }
+
+  .rk-podium-card--bronze {
+    order: 3;
+    margin-top: 1.85rem;
+    border-color: rgba(251, 146, 60, 0.36);
+  }
+
+  .rk-podium-card--gold::before {
+    background: radial-gradient(circle at top left, rgba(250, 204, 21, 0.24), transparent 56%);
+  }
+
+  .rk-podium-card--silver::before {
+    background: radial-gradient(circle at top left, rgba(203, 213, 225, 0.2), transparent 56%);
+  }
+
+  .rk-podium-card--bronze::before {
+    background: radial-gradient(circle at top left, rgba(251, 146, 60, 0.2), transparent 56%);
+  }
+
+  .rk-podium-rank {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.2rem;
+    height: 2.2rem;
+    border-radius: 999px;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .rk-podium-card--gold .rk-podium-rank {
+    background: linear-gradient(180deg, #facc15, #b7791f);
+    color: #1a1300;
+  }
+
+  .rk-podium-card--silver .rk-podium-rank {
+    background: linear-gradient(180deg, #e2e8f0, #94a3b8);
+    color: #0f172a;
+  }
+
+  .rk-podium-card--bronze .rk-podium-rank {
+    background: linear-gradient(180deg, #fb923c, #9a3412);
+    color: #190b04;
+  }
+
+  .rk-podium-body {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+  }
+
+  .rk-podium-medal {
+    display: block;
+    margin-bottom: 0.2rem;
+    color: rgba(178, 184, 194, 0.78);
+    font-size: 0.58rem;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .rk-podium-body strong {
+    display: block;
+    color: #f8fafc;
+    font-size: 0.82rem;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+  }
+
+  .rk-podium-body > span:last-child {
+    display: inline-flex;
+    margin-top: 0.38rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 122, 26, 0.28);
+    background: rgba(255, 122, 26, 0.08);
+    padding: 0.18rem 0.42rem;
+    color: #ff7a1a;
+    font-size: 0.58rem;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .rk-podium-metrics {
+    position: relative;
+    z-index: 1;
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+    gap: 0.45rem;
+    align-self: end;
+  }
+
+  .rk-podium-metric {
+    display: inline-flex;
+    min-width: 0;
+    width: 100%;
+    min-height: 3.25rem;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+    border-radius: 0.8rem;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 0.56rem 0.45rem;
+    text-align: center;
+  }
+
+  .rk-primary-metric,
+  .rk-podium-metric--primary {
+    border: 1px solid rgba(255, 122, 26, 0.3);
+    background:
+      radial-gradient(circle at top, rgba(255, 122, 26, 0.18), transparent 74%),
+      rgba(255, 122, 26, 0.08);
+    color: #ff8a2a;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .rk-primary-metric {
+    font-weight: 900;
+  }
+
+  .rk-podium-metric span {
+    color: rgba(178, 184, 194, 0.82);
+    font-size: 0.54rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .rk-podium-metric strong {
+    color: #fff7f2;
+    font-size: 1rem;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .rk-podium-metric--primary strong {
+    color: #ff9a3d;
+  }
+
+  .rk-ranking-body {
+    min-height: 0;
+  }
+
+  .rk-has-podium tbody tr:nth-child(-n+3) {
+    display: none;
+  }
+
+  @media (max-width: 480px) {
+    .rk-scroll table {
+      min-width: 500px;
+      font-size: 10px;
+    }
+
+    .rk-scroll table:has(th:nth-child(8)) {
+      min-width: 640px;
+    }
+
+    .rk-scroll th,
+    .rk-scroll td {
+      padding-left: 0.35rem !important;
+      padding-right: 0.35rem !important;
+    }
+
+    .rk-scroll th:nth-child(2),
+    .rk-scroll td:nth-child(2) {
+      width: 112px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    #scrollTopBtn {
+      display: none;
+    }
+
+    .rk-podium {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.65rem;
+      margin-top: 0.85rem;
+      margin-bottom: 0.9rem;
+    }
+
+    .rk-podium-card {
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 0.52rem 0.58rem;
+      border-radius: 0.95rem;
+      padding: 0.72rem;
+    }
+
+    .rk-podium-card--gold {
+      order: 1;
+      min-height: 0;
+    }
+
+    .rk-podium-card--silver,
+    .rk-podium-card--bronze {
+      margin-top: 0;
+      min-height: 0;
+    }
+
+    .rk-podium-card--silver {
+      order: 2;
+    }
+
+    .rk-podium-card--bronze {
+      order: 3;
+    }
+
+    .rk-podium-rank {
+      width: 2rem;
+      height: 2rem;
+      font-size: 0.9rem;
+    }
+
+    .rk-podium-medal {
+      margin-bottom: 0.15rem;
+      font-size: 0.5rem;
+      letter-spacing: 0.1em;
+    }
+
+    .rk-podium-body strong {
+      font-size: 0.76rem;
+      line-height: 1.12;
+    }
+
+    .rk-podium-body > span:last-child {
+      margin-top: 0.3rem;
+      padding: 0.15rem 0.36rem;
+      font-size: 0.52rem;
+    }
+
+    .rk-podium-metrics {
+      gap: 0.34rem;
+    }
+
+    .rk-podium-metric {
+      min-height: 2.45rem;
+      border-radius: 0.68rem;
+      padding: 0.36rem 0.16rem;
+    }
+
+    .rk-podium-metric span {
+      font-size: 0.46rem;
+      letter-spacing: 0.04em;
+    }
+
+    .rk-podium-metric strong {
+      font-size: 0.76rem;
+    }
+
+    .rk-anchor {
+      scroll-margin-top: 140px;
+    }
+
+    .rk-jump-nav {
+      margin: 0.25rem -1rem 1rem;
+      padding: 0.65rem 1rem;
+    }
+
+    .rk-jump-nav a {
+      min-height: 2rem;
+      padding: 0.45rem 0.75rem;
+      font-size: 0.68rem;
+    }
+
+    .rk-scroll {
+      overflow-x: visible;
+      overflow-y: visible;
+    }
+
+    .rk-scroll table {
+      display: block;
+      min-width: 0;
+      width: 100%;
+      font-size: 11px;
+    }
+
+    .rk-scroll thead {
+      display: none;
+    }
+
+    .rk-scroll tbody {
+      display: grid;
+      gap: 0.65rem;
+    }
+
+    .rk-scroll tr {
+      display: grid;
+      grid-template-columns: 2.2rem repeat(3, minmax(0, 1fr));
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 1rem;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.015)),
+        rgba(0, 0, 0, 0.22);
+    }
+
+    .rk-scroll tr.border-t {
+      border-top-width: 1px;
+    }
+
+    .rk-scroll tr.rk-row-gold {
+      border-color: rgba(250, 204, 21, 0.44);
+      background:
+        radial-gradient(circle at top left, rgba(250, 204, 21, 0.24), transparent 46%),
+        linear-gradient(135deg, rgba(120, 83, 12, 0.68), rgba(42, 26, 16, 0.72));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 12px 26px rgba(0, 0, 0, 0.18);
+    }
+
+    .rk-scroll tr.rk-row-silver {
+      border-color: rgba(203, 213, 225, 0.38);
+      background:
+        radial-gradient(circle at top left, rgba(203, 213, 225, 0.22), transparent 46%),
+        linear-gradient(135deg, rgba(71, 85, 105, 0.58), rgba(31, 41, 55, 0.68));
+    }
+
+    .rk-scroll tr.rk-row-bronze {
+      border-color: rgba(251, 146, 60, 0.34);
+      background:
+        radial-gradient(circle at top left, rgba(251, 146, 60, 0.2), transparent 46%),
+        linear-gradient(135deg, rgba(120, 53, 15, 0.54), rgba(51, 28, 24, 0.68));
+    }
+
+    .rk-scroll tr.rk-row-gold td:nth-child(1) {
+      background: linear-gradient(180deg, #facc15, #b7791f);
+      color: #1a1300;
+    }
+
+    .rk-scroll tr.rk-row-silver td:nth-child(1) {
+      background: linear-gradient(180deg, #e2e8f0, #94a3b8);
+      color: #0f172a;
+    }
+
+    .rk-scroll tr.rk-row-bronze td:nth-child(1) {
+      background: linear-gradient(180deg, #fb923c, #9a3412);
+      color: #190b04;
+    }
+
+    .rk-scroll td {
+      padding: 0 !important;
+      border: 0;
+    }
+
+    .rk-scroll td:nth-child(1) {
+      grid-row: 1 / span 2;
+      align-self: start;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 999px;
+      background: rgba(255, 122, 26, 0.12);
+      color: #fff7f2;
+      font-weight: 800;
+    }
+
+    .rk-scroll td:nth-child(2) {
+      grid-column: 2 / 4;
+      width: auto;
+      color: #f8fafc;
+      font-size: 0.78rem;
+      font-weight: 800;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
+    }
+
+    .rk-scroll td:nth-child(3) {
+      grid-column: 4;
+      justify-self: end;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2.4rem;
+      min-height: 1.55rem;
+      padding: 0.25rem 0.45rem !important;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 122, 26, 0.3);
+      background: rgba(255, 122, 26, 0.08);
+      font-size: 0.62rem;
+      font-weight: 800;
+    }
+
+    .rk-scroll td:nth-child(n+4) {
+      display: inline-flex;
+      min-height: 3rem;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.2rem;
+      border-radius: 0.85rem;
+      background: rgba(255, 255, 255, 0.045);
+      color: #f8fafc;
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .rk-scroll td.rk-primary-metric {
+      border: 1px solid rgba(255, 122, 26, 0.3);
+      background:
+        radial-gradient(circle at top, rgba(255, 122, 26, 0.2), transparent 72%),
+        rgba(255, 122, 26, 0.1);
+      color: #ff9a3d;
+    }
+
+    .rk-scroll td:nth-child(n+4)::before {
+      color: rgba(178, 184, 194, 0.82);
+      font-size: 0.56rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      line-height: 1;
+      text-transform: uppercase;
+    }
+
+    .rk-scroll td:nth-child(4) {
+      grid-column: 2 / 5;
+      width: 100%;
+    }
+
+    .rk-scroll table[data-rk-type="goals"] td:nth-child(4)::before { content: "Gols"; }
+    .rk-scroll table[data-rk-type="assists"] td:nth-child(4)::before { content: "Assist."; }
+    .rk-scroll table[data-rk-type="saves"] td:nth-child(4)::before { content: "Defesas"; }
+    .rk-scroll table[data-rk-type="ga"] td:nth-child(4)::before { content: "Total"; }
+    .rk-scroll table[data-rk-type="ratings"] td:nth-child(4)::before { content: "Média"; }
+    .rk-scroll table[data-rk-type="photos"] td:nth-child(4)::before { content: "Fotos"; }
+    .rk-scroll table[data-rk-type="matches"] td:nth-child(4)::before { content: "Pres."; }
+    .rk-scroll table[data-rk-type="overall"] td:nth-child(4)::before { content: "Overall"; }
+    .rk-scroll table[data-rk-type="last10"] td:nth-child(4)::before { content: "Indice"; }
+  }
+
+  .rk-main-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .rk-main-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.5rem;
+      align-items: start;
+    }
+  }
+</style>
+
+<section class="page-shell animate-fadeIn">
+  <!-- TITULO E FILTROS -->
+  <header class="page-hero space-y-4">
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+      <div class="space-y-2">
+        <span class="hero-badge text-horriver-gray">
+          <span class="hero-icon">RK</span>
+          Rankings
+        </span>
+        <h1 class="font-title text-3xl text-horriver-light">
+          Rankings completos
+        </h1>
+        <p class="text-sm text-horriver-gray">
+          Veja os rankings gerais ou filtrados por ano/mês e posição.
+        </p>
+      </div>
+
+      <!-- Resumo do filtro atual -->
+      <div class="text-xs text-horriver-gray md:text-right space-y-2">
+        <p>
+          Período:
+          <span class="text-horriver-orange font-medium"><%= periodLabel() %></span>
+        </p>
+        <p>
+          Posição:
+          <span class="text-horriver-orange font-medium"><%= posLabel(selPos) %></span>
+        </p>
+
+      </div>
+    </div>
+
+    <form
+      method="GET"
+      action="/rankings"
+      class="page-section"
+    >
+      <div class="page-section__inner">
+        <div class="page-toolbar text-[11px] md:text-xs">
+          <div class="flex flex-wrap gap-2">
+            <span class="<%= accentPillClass %>">Filtro ativo</span>
+            <span class="<%= pillClass %>"><strong class="text-horriver-orange font-semibold"><%= periodLabel() %></strong></span>
+            <span class="<%= pillClass %>"><strong class="text-horriver-orange font-semibold"><%= posLabel(selPos) %></strong></span>
+          </div>
+
+          <!-- Chips rápidos de posição -->
+          <div class="flex flex-wrap gap-1.5 pt-1 pb-0.5">
+            <% [['all','Todas'], ['Goleiro','Goleiro'], ['Zagueiro','Zagueiro'], ['Meia','Meia'], ['Atacante','Atacante']].forEach(([val, label]) => {
+                 const isActive = selPos === val;
+                 const qs = new URLSearchParams({ year: String(selYear), month: String(selMonth), position: val }).toString();
+            %>
+              <a
+                href="/rankings?<%= qs %>"
+                class="px-3 py-1.5 rounded-full text-[11px] font-semibold transition
+                  <%= isActive
+                    ? 'bg-horriver-orange text-black'
+                    : 'border border-horriver-border text-horriver-gray hover:border-horriver-orange hover:text-horriver-orange' %>"
+              ><%= label %></a>
+            <% }) %>
+          </div>
+
+          <div class="flex flex-wrap items-end gap-3">
+            <div class="min-w-[120px]">
+              <label class="block text-horriver-gray mb-1">Ano</label>
+              <select
+                name="year"
+                class="w-full bg-horriver-dark border border-horriver-border rounded-xl px-3 py-2 text-horriver-light"
+              >
+                <option value="all" <%= selYear === "all" ? "selected" : "" %>>
+                  Todos os anos
+                </option>
+                <% for (let y = currentYear; y >= 2025; y--) { %>
+                  <option value="<%= y %>" <%= selYear === y ? "selected" : "" %>>
+                    <%= y %>
+                  </option>
+                <% } %>
+              </select>
+            </div>
+
+            <div class="min-w-[120px]">
+              <label class="block text-horriver-gray mb-1">Mês</label>
+              <select
+                name="month"
+                class="w-full bg-horriver-dark border border-horriver-border rounded-xl px-3 py-2 text-horriver-light"
+              >
+                <option value="0" <%= Number(selMonth) === 0 ? "selected" : "" %>>Todos</option>
+                <% monthNames.forEach((mn, idx) => {
+                     const mVal = idx + 1;
+                %>
+                  <option value="<%= mVal %>" <%= Number(selMonth) === mVal ? "selected" : "" %>>
+                    <%= mn %>
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div class="min-w-[130px]">
+              <label class="block text-horriver-gray mb-1">Posição</label>
+              <select
+                name="position"
+                class="w-full bg-horriver-dark border border-horriver-border rounded-xl px-3 py-2 text-horriver-light"
+              >
+                <% const posicoes = ["Todas", "Goleiro", "Zagueiro", "Meia", "Atacante"]; %>
+                <% posicoes.forEach((pos) => {
+                     const val = pos === "Todas" ? "all" : pos;
+                %>
+                  <option
+                    value="<%= val %>"
+                    <%= (selPos === val || (!selPos && val === "all")) ? "selected" : "" %>
+                  >
+                    <%= pos %>
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div class="flex items-center gap-2 md:pb-[1px]">
+              <button
+                type="submit"
+                class="px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
+              >
+                Aplicar
+              </button>
+              <a
+                href="/rankings"
+                class="px-4 py-2 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
+              >
+                Limpar
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  </header>
+
+  <section class="quick-stats">
+    <article class="quick-stat quick-stat--accent">
+      <span class="quick-stat__label">
+        Artilheiro do filtro
+      </span>
+      <strong class="quick-stat__value">
+        <%= topGoal ? topGoal.goals || 0 : 0 %>
+      </strong>
+      <span class="quick-stat__sub text-horriver-light/90">
+        <%= leaderName(topGoal) %>
+      </span>
+    </article>
+
+    <article class="quick-stat">
+      <span class="quick-stat__label">
+        Lider em assistências
+      </span>
+      <strong class="quick-stat__value">
+        <%= topAssist ? topAssist.assists || 0 : 0 %>
+      </strong>
+      <span class="quick-stat__sub">
+        <%= leaderName(topAssist) %>
+      </span>
+    </article>
+
+    <article class="quick-stat">
+      <span class="quick-stat__label">
+        Melhor média
+      </span>
+      <strong class="quick-stat__value">
+        <%= topRating ? fmtRating(topRating.rating) : "0,00" %>
+      </strong>
+      <span class="quick-stat__sub">
+        <%= leaderName(topRating) %>
+      </span>
+    </article>
+
+    <article class="quick-stat">
+      <span class="quick-stat__label">
+        Overall lider
+      </span>
+      <strong class="quick-stat__value">
+        <%= topOverall ? topOverall.overallScore ?? 60 : 60 %>
+      </strong>
+      <span class="quick-stat__sub">
+        <%= leaderName(topOverall) %>
+      </span>
+    </article>
+  </section>
+
+  <nav class="rk-jump-nav" aria-label="Ir para ranking" data-rk-jump-nav>
+    <div class="rk-jump-nav__scroller">
+      <a href="#ranking-gols" class="is-active">Gols</a>
+      <a href="#ranking-assistências">Assist.</a>
+      <a href="#ranking-defesas">Defesas</a>
+      <a href="#ranking-ga">G/A</a>
+      <a href="#ranking-medias">Médias</a>
+      <a href="#ranking-fotos">Fotos</a>
+      <a href="#ranking-presenças">Presenças</a>
+      <a href="#ranking-overall">Overall</a>
+      <a href="#ranking-ultimos-10">10J</a>
+      <a href="#ranking-semana">Semana</a>
+      <a href="#ranking-mes">Mês</a>
+    </div>
+  </nav>
+
+  <!-- VITORIAS POR COR -->
+  <section class="space-y-6 mt-4">
+    <h2 class="font-title text-2xl text-horriver-light">
+      Vitorias por cor
+    </h2>
+
+    <div class="card-highlight rounded-3xl p-[1px]">
+      <div class="card-inner p-4 md:p-5">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <h3 class="font-title text-lg text-horriver-light">
+              Times vencedores por cor
+            </h3>
+            <p class="text-[11px] text-horriver-gray">
+              Contagem das peladas filtradas com cor do time vencedor.
+            </p>
+          </div>
+          <span
+            class="badge-pulse inline-flex items-center px-3 py-1 rounded-full
+                   bg-black/60 border border-horriver-red/70 text-[11px] text-horriver-orange"
+          >
+            Cores
+          </span>
+        </div>
+
+        <div class="mt-4">
+          <% if (!colorWins.length) { %>
+            <div class="<%= emptyStateClass %>">
+              <span class="<%= emptyEyebrowClass %>">Sem vitorias</span>
+              <h3 class="mt-4 text-[1.05rem] font-bold text-horriver-light">Nenhuma cor venceu neste recorte</h3>
+              <p class="mt-2 text-sm leading-relaxed text-horriver-gray/90">
+                Ajuste o período ou a posição para comparar outro intervalo.
+              </p>
+            </div>
+          <% } else { %>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <% colorWins.forEach((row) => { %>
+                <div class="rounded-2xl border px-3 py-3 text-center <%= colorBoxClass(row.name) %>">
+                  <p class="text-[11px] uppercase tracking-[0.18em] text-horriver-gray">
+                    <%= colorDisplayName(row.name) %>
+                  </p>
+                  <p class="text-2xl font-semibold text-horriver-light">
+                    <%= row.count || 0 %>
+                  </p>
+                </div>
+              <% }) %>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- GRID DE RANKINGS PRINCIPAIS -->
+  <section class="rk-main-grid">
+      <!-- ================= GOLS ================= -->
+      <div id="ranking-gols" class="card-highlight rounded-3xl p-[1px] rk-anchor">
+        <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h2 class="font-title text-lg text-horriver-light">Artilheiros</h2>
+              <p class="text-[11px] text-horriver-gray mt-0.5">
+                Quem mais balançou a rede.
+              </p>
+            </div>
+            <span
+              class="badge-pulse inline-flex items-center px-3 py-1 rounded-full
+                     bg-black/60 border border-horriver-red/70 text-[11px] text-horriver-orange"
+            >
+              Gols
+            </span>
+          </div>
+
+          <div class="mt-4 flex-1 overflow-hidden rk-ranking-body">
+            <% if (!goals.length) { %>
+              <p class="text-sm text-horriver-gray">
+                Nenhum dado para este período.
+              </p>
+            <% } else { %>
+              <%- renderRankingPodium(goals, [
+                { label: "Gols", value: (row) => row.goals || 0 },
+              ]) %>
+              <div class="rk-scroll h-full overflow-y-auto" data-skeleton="list">
+                <table class="table-sticky w-full text-[11px] rk-has-podium" data-rk-type="goals">
+                  <thead class="bg-black/50 sticky top-0 z-10">
+                    <tr>
+                      <th class="text-left px-2 py-1">#</th>
+                      <th class="text-left px-2 py-1">Jogador</th>
+                      <th class="text-left px-2 py-1">Posição</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange rk-primary-metric">Gols</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% goals.forEach((row, idx) => { %>
+                      <tr class="border-t border-horriver-border/40 <%= topRowClass(idx) %>">
+                        <td class="px-2 py-1"><%= idx + 1 %></td>
+                        <td class="px-2 py-1">
+                          <%= row.player.name %>
+                          <% if (row.player.nickname) { %>
+                            (<%= row.player.nickname %>)
+                          <% } %>
+                        </td>
+                        <td class="px-2 py-1 text-horriver-orange text-[10px]">
+                          <%= row.player.position %>
+                        </td>
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange rk-primary-metric">
+                          <%= row.goals || 0 %>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= ASSISTÊNCIAS ================= -->
+      <div id="ranking-assistências" class="card-highlight rounded-3xl p-[1px] rk-anchor">
+        <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h2 class="font-title text-lg text-horriver-light">Garçons</h2>
+              <p class="text-[11px] text-horriver-gray mt-0.5">
+                Quem mais serviu gols.
+              </p>
+            </div>
+            <span
+              class="badge-pulse inline-flex items-center px-3 py-1 rounded-full
+                     bg-black/60 border border-horriver-red/70 text-[11px] text-horriver-orange"
+            >
+              Assist.
+            </span>
+          </div>
+
+          <div class="mt-4 flex-1 overflow-hidden rk-ranking-body">
+            <% if (!assists.length) { %>
+              <p class="text-sm text-horriver-gray">
+                Nenhum dado para este período.
+              </p>
+            <% } else { %>
+              <%- renderRankingPodium(assists, [
+                { label: "Assist.", value: (row) => row.assists || 0 },
+              ]) %>
+              <div class="rk-scroll h-full overflow-y-auto" data-skeleton="list">
+                <table class="table-sticky w-full text-[11px] rk-has-podium" data-rk-type="assists">
+                  <thead class="bg-black/50 sticky top-0 z-10">
+                    <tr>
+                      <th class="text-left px-2 py-1">#</th>
+                      <th class="text-left px-2 py-1">Jogador</th>
+                      <th class="text-left px-2 py-1">Posição</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange rk-primary-metric">Assist.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% assists.forEach((row, idx) => { %>
+                      <tr class="border-t border-horriver-border/40 <%= topRowClass(idx) %>">
+                        <td class="px-2 py-1"><%= idx + 1 %></td>
+                        <td class="px-2 py-1">
+                          <%= row.player.name %>
+                          <% if (row.player.nickname) { %>
+                            (<%= row.player.nickname %>)
+                          <% } %>
+                        </td>
+                        <td class="px-2 py-1 text-horriver-orange text-[10px]">
+                          <%= row.player.position %>
+                        </td>
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange rk-primary-metric">
+                          <%= row.assists || 0 %>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+      <!-- ================= GOLS + ASSISTÊNCIAS ================= -->
+      <div id="ranking-defesas" class="card-highlight rounded-3xl p-[1px] rk-anchor">
+        <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h2 class="font-title text-lg text-horriver-light">Paredes</h2>
+              <p class="text-[11px] text-horriver-gray mt-0.5">
+                Goleiros com defesas registradas.
+              </p>
+            </div>
+            <span
+              class="badge-pulse inline-flex items-center px-3 py-1 rounded-full
+                     bg-black/60 border border-horriver-red/70 text-[11px] text-horriver-orange"
+            >
+              Defesas
+            </span>
+          </div>
+
+          <div class="mt-4 flex-1 overflow-hidden rk-ranking-body">
+            <% if (!saves.length) { %>
+              <p class="text-sm text-horriver-gray">
+                Nenhuma defesa registrada para este per&iacute;odo.
+              </p>
+            <% } else { %>
+              <%- renderRankingPodium(saves, [
+                { label: "Defesas", value: (row) => row.saves || 0 },
+              ]) %>
+              <div class="rk-scroll h-full overflow-y-auto" data-skeleton="list">
+                <table class="table-sticky w-full text-[11px] rk-has-podium" data-rk-type="saves">
+                  <thead class="bg-black/50 sticky top-0 z-10">
+                    <tr>
+                      <th class="text-left px-2 py-1">#</th>
+                      <th class="text-left px-2 py-1">Jogador</th>
+                      <th class="text-left px-2 py-1">Posi&ccedil;&atilde;o</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange rk-primary-metric">Defesas</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% saves.forEach((row, idx) => { %>
+                      <tr class="border-t border-horriver-border/40 <%= topRowClass(idx) %>">
+                        <td class="px-2 py-1"><%= idx + 1 %></td>
+                        <td class="px-2 py-1">
+                          <%= row.player.name %>
+                          <% if (row.player.nickname) { %>
+                            (<%= row.player.nickname %>)
+                          <% } %>
+                        </td>
+                        <td class="px-2 py-1 text-horriver-orange text-[10px]">
+                          <%= row.player.position %>
+                        </td>
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange rk-primary-metric">
+                          <%= row.saves || 0 %>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+
+      <div id="ranking-ga" class="card-highlight rounded-3xl p-[1px] rk-anchor">
+        <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h2 class="font-title text-lg text-horriver-light">
+                Participações em gol
+              </h2>
+              <p class="text-[11px] text-horriver-gray mt-0.5">
+                Soma de gols + assistências.
+              </p>
+            </div>
+            <span
+              class="badge-pulse inline-flex items-center px-3 py-1 rounded-full
+                     bg-black/60 border border-horriver-red/70 text-[11px] text-horriver-orange"
+            >
+              G + A
+            </span>
+          </div>
+
+          <div class="mt-4 flex-1 overflow-hidden rk-ranking-body">
+            <% if (!ga.length) { %>
+              <p class="text-sm text-horriver-gray">
+                Nenhum dado para este período.
+              </p>
+            <% } else { %>
+              <%- renderRankingPodium(ga, [
+                { label: "Total", value: (row) => (row.goals || 0) + (row.assists || 0) },
+              ]) %>
+              <div class="rk-scroll h-full overflow-y-auto" data-skeleton="list">
+                <table class="table-sticky w-full text-[11px] rk-has-podium" data-rk-type="ga">
+                  <thead class="bg-black/50 sticky top-0 z-10">
+                    <tr>
+                      <th class="text-left px-2 py-1">#</th>
+                      <th class="text-left px-2 py-1">Jogador</th>
+                      <th class="text-left px-2 py-1">Posição</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange rk-primary-metric">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% ga.forEach((row, idx) => { %>
+                      <tr class="border-t border-horriver-border/40 <%= topRowClass(idx) %>">
+                        <td class="px-2 py-1"><%= idx + 1 %></td>
+                        <td class="px-2 py-1">
+                          <%= row.player.name %>
+                          <% if (row.player.nickname) { %>
+                            (<%= row.player.nickname %>)
+                          <% } %>
+                        </td>
+                        <td class="px-2 py-1 text-horriver-orange text-[10px]">
+                          <%= row.player.position %>
+                        </td>
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange rk-primary-metric">
+                          <%= (row.goals || 0) + (row.assists || 0) %>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= NOTAS ================= -->
+      <div id="ranking-medias" class="card-highlight rounded-3xl p-[1px] rk-anchor">
+        <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h2 class="font-title text-lg text-horriver-light">
+                Maiores médias de nota
+              </h2>
+              <p class="text-[11px] text-horriver-gray mt-0.5">
+                Jogadores mais bem avaliados.
+              </p>
+            </div>
+            <span
+              class="badge-pulse inline-flex items-center px-3 py-1 rounded-full
+                     bg-black/60 border border-horriver-red/70 text-[11px] text-horriver-orange"
+            >
+              Notas
+            </span>
+          </div>
+
+          <div class="mt-4 flex-1 overflow-hidden rk-ranking-body">
+            <% if (!ratings.length) { %>
+              <p class="text-sm text-horriver-gray">
+                Nenhum dado para este período.
+              </p>
+            <% } else { %>
+              <%- renderRankingPodium(ratings, [
+                { label: "Média", value: (row) => fmtRating(row.rating) },
+              ]) %>
+              <div class="rk-scroll h-full overflow-y-auto" data-skeleton="list">
+                <table class="table-sticky w-full text-[11px] rk-has-podium" data-rk-type="ratings">
+                  <thead class="bg-black/50 sticky top-0 z-10">
+                    <tr>
+                      <th class="text-left px-2 py-1">#</th>
+                      <th class="text-left px-2 py-1">Jogador</th>
+                      <th class="text-left px-2 py-1">Posição</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange rk-primary-metric">Média</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% ratings.forEach((row, idx) => { %>
+                      <tr class="border-t border-horriver-border/40 <%= topRowClass(idx) %>">
+                        <td class="px-2 py-1"><%= idx + 1 %></td>
+                        <td class="px-2 py-1">
+                          <%= row.player.name %>
+                          <% if (row.player.nickname) { %>
+                            (<%= row.player.nickname %>)
+                          <% } %>
+                        </td>
+                        <td class="px-2 py-1 text-horriver-orange text-[10px]">
+                          <%= row.player.position %>
+                        </td>
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange rk-primary-metric">
+                          <%= fmtRating(row.rating) %>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+      <!-- ================= FOTOS ================= -->
+      <div id="ranking-fotos" class="card-highlight rounded-3xl p-[1px] rk-anchor">
+        <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h2 class="font-title text-lg text-horriver-light">
+                Rei das fotos
+              </h2>
+              <p class="text-[11px] text-horriver-gray mt-0.5">
+                Quem mais apareceu nos registros.
+              </p>
+            </div>
+            <span
+              class="badge-pulse inline-flex items-center px-3 py-1 rounded-full
+                     bg-black/60 border border-horriver-red/70 text-[11px] text-horriver-orange"
+            >
+              Fotos
+            </span>
+          </div>
+
+          <div class="mt-4 flex-1 overflow-hidden rk-ranking-body">
+            <% if (!photos.length) { %>
+              <p class="text-sm text-horriver-gray">
+                Nenhum dado para este período.
+              </p>
+            <% } else { %>
+              <%- renderRankingPodium(photos, [
+                { label: "Fotos", value: (row) => row.photos || 0 },
+              ]) %>
+              <div class="rk-scroll h-full overflow-y-auto" data-skeleton="list">
+                <table class="table-sticky w-full text-[11px] rk-has-podium" data-rk-type="photos">
+                  <thead class="bg-black/50 sticky top-0 z-10">
+                    <tr>
+                      <th class="text-left px-2 py-1">#</th>
+                      <th class="text-left px-2 py-1">Jogador</th>
+                      <th class="text-left px-2 py-1">Posição</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange rk-primary-metric">Fotos</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% photos.forEach((row, idx) => { %>
+                      <tr class="border-t border-horriver-border/40 <%= topRowClass(idx) %>">
+                        <td class="px-2 py-1"><%= idx + 1 %></td>
+                        <td class="px-2 py-1">
+                          <%= row.player.name %>
+                          <% if (row.player.nickname) { %>
+                            (<%= row.player.nickname %>)
+                          <% } %>
+                        </td>
+                        <td class="px-2 py-1 text-horriver-orange text-[10px]">
+                          <%= row.player.position %>
+                        </td>
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange rk-primary-metric">
+                          <%= row.photos || 0 %>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= PRESENÇAS ================= -->
+      <div id="ranking-presenças" class="card-highlight rounded-3xl p-[1px] rk-anchor">
+        <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h2 class="font-title text-lg text-horriver-light">
+                Rei das presenças
+              </h2>
+              <p class="text-[11px] text-horriver-gray mt-0.5">
+                Quem mais marcou presença nas peladas.
+              </p>
+            </div>
+            <span
+              class="badge-pulse inline-flex items-center px-3 py-1 rounded-full
+                     bg-black/60 border border-horriver-red/70 text-[11px] text-horriver-orange"
+            >
+              Presenças
+            </span>
+          </div>
+
+          <div class="mt-4 flex-1 overflow-hidden rk-ranking-body">
+            <% if (!matches.length) { %>
+              <p class="text-sm text-horriver-gray">
+                Nenhum dado para este período.
+              </p>
+            <% } else { %>
+              <%- renderRankingPodium(matches, [
+                { label: "Pres.", value: (row) => row.matches || 0 },
+              ]) %>
+              <div class="rk-scroll h-full overflow-y-auto" data-skeleton="list">
+                <table class="table-sticky w-full text-[11px] rk-has-podium" data-rk-type="matches">
+                  <thead class="bg-black/50 sticky top-0 z-10">
+                    <tr>
+                      <th class="text-left px-2 py-1">#</th>
+                      <th class="text-left px-2 py-1">Jogador</th>
+                      <th class="text-left px-2 py-1">Posição</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange rk-primary-metric">Presenças</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% matches.forEach((row, idx) => { %>
+                      <tr class="border-t border-horriver-border/40 <%= topRowClass(idx) %>">
+                        <td class="px-2 py-1"><%= idx + 1 %></td>
+                        <td class="px-2 py-1">
+                          <%= row.player.name %>
+                          <% if (row.player.nickname) { %>
+                            (<%= row.player.nickname %>)
+                          <% } %>
+                        </td>
+                        <td class="px-2 py-1 text-horriver-orange text-[10px]">
+                          <%= row.player.position %>
+                        </td>
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange rk-primary-metric">
+                          <%= row.matches || 0 %>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+      <!-- ================= OVERALL ================= -->
+      <div id="ranking-overall" class="card-highlight rounded-3xl p-[1px] rk-anchor">
+        <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h2 class="font-title text-lg text-horriver-light">
+                Ranking Overall
+              </h2>
+              <p class="text-[11px] text-horriver-gray mt-0.5">
+                OVR salvo de cada jogador — mesmo valor exibido no sorteador de times.
+              </p>
+            </div>
+            <span
+              class="badge-pulse inline-flex items-center px-3 py-1 rounded-full
+                     bg-black/60 border border-horriver-red/70 text-[11px] text-horriver-orange"
+            >
+              60–99
+            </span>
+          </div>
+
+          <div class="mt-4 flex-1 overflow-hidden rk-ranking-body">
+            <% if (!overall.length) { %>
+              <p class="text-sm text-horriver-gray">
+                Nenhum dado disponível.
+              </p>
+            <% } else { %>
+              <%- renderRankingPodium(overall, [
+                { label: "Overall", value: (row) => row.overallScore ?? 60 },
+              ]) %>
+              <div class="rk-scroll h-full overflow-y-auto" data-skeleton="list">
+                <table class="table-sticky w-full text-[11px] rk-has-podium" data-rk-type="overall">
+                  <thead class="bg-black/50 sticky top-0 z-10">
+                    <tr>
+                      <th class="text-left px-2 py-1">#</th>
+                      <th class="text-left px-2 py-1">Jogador</th>
+                      <th class="text-left px-2 py-1">Posição</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange rk-primary-metric">Overall</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% overall.forEach((row, idx) => { %>
+                      <tr class="border-t border-horriver-border/40 <%= topRowClass(idx) %>">
+                        <td class="px-2 py-1"><%= idx + 1 %></td>
+                        <td class="px-2 py-1">
+                          <%= row.player.name %>
+                          <% if (row.player.nickname) { %>
+                            (<%= row.player.nickname %>)
+                          <% } %>
+                        </td>
+                        <td class="px-2 py-1 text-horriver-orange text-[10px]">
+                          <%= row.player.position %>
+                        </td>
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange rk-primary-metric">
+                          <%= row.overallScore ?? 60 %>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+</section>
+
+  <!-- ÚLTIMAS 10 PELADAS -->
+  <section class="space-y-6 mt-4">
+    <h2 class="font-title text-2xl text-horriver-light">
+      Forma recente
+    </h2>
+
+      <!-- ÚLTIMOS 10 JOGOS -->
+      <div id="ranking-ultimos-10" class="card-highlight rounded-3xl p-[1px] rk-anchor">
+        <div class="card-inner p-4 md:p-5 flex flex-col h-full">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h3 class="font-title text-lg text-horriver-light">
+                Melhores das últimas 10 peladas
+              </h3>
+              <p class="text-[11px] text-horriver-gray">
+                Considera apenas as 10 peladas mais recentes (gerais),
+                somando o desempenho de cada jogador nesses jogos.
+              </p>
+            </div>
+            <span
+              class="badge-pulse inline-flex items-center px-3 py-1 rounded-full
+                     bg-black/60 border border-horriver-red/70 text-[11px] text-horriver-orange"
+            >
+              Últimos 10
+            </span>
+          </div>
+
+          <div class="mt-4 flex-1 overflow-hidden rk-ranking-body">
+            <% if (!last10.length) { %>
+              <p class="text-sm text-horriver-gray">
+                Nenhum dado disponível para as últimas 10 peladas.
+              </p>
+            <% } else { %>
+              <%- renderRankingPodium(last10, [
+                { label: "Indice", value: (row) => row.last10Score ? row.last10Score.toFixed(2).replace('.', ',') : '0,00' },
+              ]) %>
+              <div class="rk-scroll h-full overflow-y-auto" data-skeleton="list">
+                <table class="table-sticky w-full text-[11px] rk-has-podium" data-rk-type="last10">
+                  <thead class="bg-black/50 sticky top-0 z-10">
+                    <tr>
+                      <th class="text-left px-2 py-1">#</th>
+                      <th class="text-left px-2 py-1">Jogador</th>
+                      <th class="text-left px-2 py-1">Posição</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange rk-primary-metric">Índice 10J</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% last10.forEach((row, idx) => { %>
+                      <tr class="border-t border-horriver-border/40 <%= topRowClass(idx) %>">
+                        <td class="px-2 py-1"><%= idx + 1 %></td>
+                        <td class="px-2 py-1">
+                          <%= row.player.name %>
+                          <% if (row.player.nickname) { %>
+                            (<%= row.player.nickname %>)
+                          <% } %>
+                        </td>
+                        <td class="px-2 py-1 text-horriver-orange text-[10px]">
+                          <%= row.player.position %>
+                        </td>
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange rk-primary-metric">
+                          <%= row.last10Score ? row.last10Score.toFixed(2).replace('.', ',') : '0,00' %>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+  </section>
+
+  <!-- RANKINGS DE PRÊMIOS (CRAQUE DA SEMANA / MÊS) -->
+  <section class="space-y-6 mt-4">
+    <h2 class="font-title text-2xl text-horriver-light">
+      Craques da semana e do mês
+    </h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-[11px] md:text-xs">
+      <!-- Craques da semana -->
+      <div id="ranking-semana" class="bg-black/40 border border-horriver-border rounded-2xl p-4 rk-anchor">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h3 class="font-title text-lg text-horriver-light">
+              Craques da semana
+            </h3>
+            <p class="text-[11px] text-horriver-gray">
+              Jogadores que mais vezes foram craque da semana.
+            </p>
+          </div>
+        </div>
+
+        <% if (!weeklyAwards.length) { %>
+          <p class="text-sm text-horriver-gray">
+            Nenhum craque da semana registrado ainda.
+          </p>
+        <% } else { %>
+          <table class="table-sticky w-full text-[11px]">
+            <thead class="bg-horriver-red/20">
+              <tr>
+                <th class="text-left px-2 py-1">#</th>
+                <th class="text-left px-2 py-1">Jogador</th>
+                <th class="text-left px-2 py-1">Posição</th>
+                <th class="text-center px-2 py-1 rk-primary-metric">Vezes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% weeklyAwards.forEach((row, idx) => { %>
+                <tr class="border-t border-horriver-border/40">
+                  <td class="px-2 py-1"><%= idx + 1 %></td>
+                  <td class="px-2 py-1">
+                    <%= row.player.name %>
+                    <% if (row.player.nickname) { %>
+                      (<%= row.player.nickname %>)
+                    <% } %>
+                  </td>
+                  <td class="px-2 py-1 text-horriver-orange text-[10px]">
+                    <%= row.player.position %>
+                  </td>
+                  <td class="px-2 py-1 text-center font-semibold rk-primary-metric">
+                    <%= row.count || 0 %>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        <% } %>
+      </div>
+
+      <!-- Craques do mês -->
+      <div id="ranking-mes" class="bg-black/40 border border-horriver-border rounded-2xl p-4 rk-anchor">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h3 class="font-title text-lg text-horriver-light">
+              Craques do mês
+            </h3>
+            <p class="text-[11px] text-horriver-gray">
+              Quem mais levou o prêmio mensal.
+            </p>
+          </div>
+        </div>
+
+        <% if (!monthlyAwards.length) { %>
+          <p class="text-sm text-horriver-gray">
+            Nenhum craque do mês registrado ainda.
+          </p>
+        <% } else { %>
+          <table class="table-sticky w-full text-[11px]">
+            <thead class="bg-horriver-red/20">
+              <tr>
+                <th class="text-left px-2 py-1">#</th>
+                <th class="text-left px-2 py-1">Jogador</th>
+                <th class="text-left px-2 py-1">Posição</th>
+                <th class="text-center px-2 py-1 rk-primary-metric">Vezes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% monthlyAwards.forEach((row, idx) => { %>
+                <tr class="border-t border-horriver-border/40">
+                  <td class="px-2 py-1"><%= idx + 1 %></td>
+                  <td class="px-2 py-1">
+                    <%= row.player.name %>
+                    <% if (row.player.nickname) { %>
+                      (<%= row.player.nickname %>)
+                    <% } %>
+                  </td>
+                  <td class="px-2 py-1 text-horriver-orange text-[10px]">
+                    <%= row.player.position %>
+                  </td>
+                  <td class="px-2 py-1 text-center font-semibold rk-primary-metric">
+                    <%= row.count || 0 %>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        <% } %>
+      </div>
+    </div>
+  </section>
+</section>
+
+<script>
+  (() => {
+    const nav = document.querySelector("[data-rk-jump-nav]");
+    if (!nav) return;
+
+    const links = Array.from(nav.querySelectorAll('a[href^="#ranking-"]'));
+    const sections = links
+      .map((link) => document.querySelector(link.getAttribute("href")))
+      .filter(Boolean);
+    const scroller = nav.querySelector(".rk-jump-nav__scroller");
+    let clickedTarget = null;
+    let clickedTargetReached = false;
+    let activeId = null;
+    let rafId = null;
+
+    const centerActiveLink = (link) => {
+      if (!scroller || !link) return;
+
+      const targetLeft =
+        link.offsetLeft - scroller.clientWidth / 2 + link.offsetWidth / 2;
+
+      scroller.scrollTo({
+        left: Math.max(0, targetLeft),
+        behavior: "smooth",
+      });
+    };
+
+    const setActive = (id, options = {}) => {
+      const shouldCenter = options.center !== false && activeId !== id;
+      activeId = id;
+
+      links.forEach((link) => {
+        const active = link.getAttribute("href") === `#${id}`;
+        link.classList.toggle("is-active", active);
+        if (active) {
+          link.setAttribute("aria-current", "true");
+          if (shouldCenter) centerActiveLink(link);
+        } else {
+          link.removeAttribute("aria-current");
+        }
+      });
+    };
+
+    links.forEach((link) => {
+      link.addEventListener("click", (event) => {
+        const target = document.querySelector(link.getAttribute("href"));
+        if (!target) return;
+
+        event.preventDefault();
+        clickedTarget = target.id;
+        clickedTargetReached = false;
+        setActive(target.id, { center: true });
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+
+        if (history.replaceState) {
+          history.replaceState(null, "", `#${target.id}`);
+        }
+
+      });
+    });
+
+    const getCurrentSection = () => {
+      const marker = Math.max(150, Math.round(window.innerHeight * 0.24));
+      let current = sections[0];
+
+      sections.forEach((section) => {
+        const rect = section.getBoundingClientRect();
+        if (rect.top <= marker) {
+          current = section;
+        }
+      });
+
+      return current;
+    };
+
+    const updateFromScroll = () => {
+      const marker = Math.max(150, Math.round(window.innerHeight * 0.24));
+      if (clickedTarget) {
+        const clickedSection = document.getElementById(clickedTarget);
+        if (clickedSection) {
+          const rect = clickedSection.getBoundingClientRect();
+          if (rect.top <= marker && rect.bottom > marker) {
+            clickedTargetReached = true;
+            setActive(clickedTarget, { center: false });
+            return;
+          }
+          if (!clickedTargetReached) return;
+        }
+        clickedTarget = null;
+        clickedTargetReached = false;
+      }
+      const current = getCurrentSection();
+      if (current) setActive(current.id, { center: false });
+    };
+
+    const requestUpdateFromScroll = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        updateFromScroll();
+      });
+    };
+
+    updateFromScroll();
+    window.addEventListener("scroll", requestUpdateFromScroll, { passive: true });
+    window.addEventListener("resize", requestUpdateFromScroll);
+  })();
+</script>
+

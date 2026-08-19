@@ -1,0 +1,65 @@
+<%
+// views/admin_match.ejs
+// Variáveis recebidas: match, players, stats
+// O layout.ejs já cuida de <html>, <body>, header, footer etc.
+// Aqui é só o conteúdo interno do <main>.
+  const fmtDateTimeBR = (d) =>
+    d ? new Date(d).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", hour12: false }) : "-";
+  const hasVoteSessionTokens = !!(voteSession && voteSession.tokens && voteSession.tokens.length);
+  const voteSessionClosed = !!(
+    voteSession &&
+    voteSession.expiresAt &&
+    new Date(voteSession.expiresAt).getTime() <= Date.now()
+  );
+  const matchDateLabel = new Date(match.playedAt).toLocaleDateString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+  });
+  const presentPlayersCount = stats.filter((s) => s.present).length;
+  const totalGoalsCount = stats.reduce((sum, s) => sum + (Number(s.goals) || 0), 0);
+  const totalAssistsCount = stats.reduce((sum, s) => sum + (Number(s.assists) || 0), 0);
+  const voteTokensTotal = voteSession && voteSession.tokens ? voteSession.tokens.length : 0;
+  const voteTokensUsed =
+    voteSession && voteSession.tokens
+      ? voteSession.tokens.filter((t) => t.usedAt).length
+      : 0;
+  const voteTokensPending = Math.max(voteTokensTotal - voteTokensUsed, 0);
+  const presentPlayerIdSet = new Set(
+    stats.filter((stat) => stat.present).map((stat) => stat.playerId)
+  );
+  const lineupData = typeof lineupResult !== "undefined" ? lineupResult : null;
+  const initialOpenDialog = typeof openDialog === "string" ? openDialog : "";
+%>
+
+<%- include('partials/admin_match/_styles') %>
+
+<%- include('partials/admin_match_dashboard', {
+  match,
+  players,
+  stats,
+  voteSession,
+  voteBaseUrl,
+  fmtDateTimeBR,
+  hasVoteSessionTokens,
+  voteSessionClosed,
+  matchDateLabel,
+  presentPlayersCount,
+  totalGoalsCount,
+  totalAssistsCount,
+  voteTokensTotal,
+  voteTokensUsed,
+  voteTokensPending,
+  lineupData
+}) %>
+
+<%- include('partials/admin_match/_dialog_presence', {
+  initialOpenDialog,
+  matchDateLabel,
+  presentPlayersCount,
+  presentPlayerIdSet,
+}) %>
+
+<%- include('partials/admin_match/_scripts_main') %>
+
+<%- include('partials/admin_match/_section_tournament') %>
+
+<%- include('partials/admin_match/_scripts_sorteador', { lineupData }) %>

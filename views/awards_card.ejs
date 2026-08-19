@@ -1,0 +1,235 @@
+<%
+  const matchDateLabel = new Date(match.playedAt).toLocaleDateString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+  });
+  const craque = awards?.craque || null;
+  const awardList = [
+    ["Melhor Goleiro", awards?.melhor_goleiro || null],
+    ["Melhor Zagueiro", awards?.melhor_zagueiro || null],
+    ["Melhor Meia", awards?.melhor_meia || null],
+    ["Melhor Atacante", awards?.melhor_atacante || null],
+  ];
+  const fmtScore = (value) => {
+    const num = Number(value);
+    return Number.isFinite(num) ? num.toFixed(2) : "-";
+  };
+  const photoFor = (player, size = 160) => {
+    if (!player?.photoUrl) return "/img/logo-128x128.svg";
+    return typeof thumbUrl === "function" ? thumbUrl(player.photoUrl, size) : player.photoUrl;
+  };
+  const playerPosition = (item) => item?.player?.position || item?.positionNorm || "-";
+%>
+
+<style>
+  .awards-card-page {
+    min-height: 100vh;
+    padding: 40px 16px;
+    color: #f3f4f6;
+    background:
+      radial-gradient(circle at top left, rgba(118, 24, 50, 0.12) 0%, transparent 32%),
+      radial-gradient(circle at top right, rgba(255, 122, 26, 0.04) 0%, transparent 18%),
+      radial-gradient(circle at bottom right, rgba(24, 44, 82, 0.12) 0%, transparent 28%),
+      linear-gradient(180deg, #2a0005 0%, #160208 34%, #050509 100%);
+  }
+  .awards-card-export {
+    position: relative;
+    overflow: hidden;
+    border-radius: 34px;
+    border: 1px solid rgba(255, 122, 26, 0.16);
+    background:
+      radial-gradient(circle at top left, rgba(118, 24, 50, 0.12) 0%, transparent 32%),
+      radial-gradient(circle at top right, rgba(255, 122, 26, 0.04) 0%, transparent 18%),
+      radial-gradient(circle at bottom right, rgba(24, 44, 82, 0.12) 0%, transparent 28%),
+      linear-gradient(180deg, #2a0005 0%, #160208 34%, #050509 100%);
+    box-shadow: 0 24px 56px rgba(0, 0, 0, 0.28);
+  }
+  .awards-card-watermark {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 520px;
+    height: 520px;
+    transform: translate(-50%, -44%);
+    opacity: 0.025;
+    filter: grayscale(1) brightness(0.96) blur(2px);
+    pointer-events: none;
+    user-select: none;
+  }
+  .awards-card-divider {
+    height: 1px;
+    margin: 0 0 34px;
+    opacity: 0.62;
+    background: linear-gradient(90deg, rgba(34,197,94,0.50) 0%, rgba(250,204,21,0.52) 28%, rgba(239,68,68,0.48) 58%, rgba(59,130,246,0.50) 100%);
+  }
+  .awards-card-panel {
+    border-radius: 30px;
+    border: 1px solid rgba(255, 122, 26, 0.22);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.025), rgba(0,0,0,0.16)),
+      rgba(0, 0, 0, 0.14);
+  }
+  .awards-card-grid-item {
+    border-radius: 28px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.12)),
+      rgba(0, 0, 0, 0.16);
+  }
+</style>
+
+<section class="awards-card-page">
+  <div class="mx-auto max-w-5xl space-y-6">
+    <header class="flex items-center justify-between gap-4">
+      <div>
+        <p class="text-xs uppercase tracking-[0.2em] text-horriver-gray">Premios da pelada</p>
+        <h1 class="text-2xl font-semibold text-horriver-orange">
+          <%= match.description || "Pelada" %> - <%= matchDateLabel %>
+        </h1>
+      </div>
+      <button
+        type="button"
+        id="download-awards-image"
+        data-match-id="<%= match.id %>"
+        class="px-4 py-2 rounded-full bg-horriver-orange text-black text-sm font-semibold shadow-card-soft hover:bg-orange-500 transition"
+      >
+        Baixar imagem dos premios
+      </button>
+    </header>
+
+    <div
+      id="awards-card"
+      class="awards-card-export mx-auto max-w-[900px] p-7 md:p-8"
+    >
+      <img src="/img/logo-32x32.svg" alt="" class="awards-card-watermark" />
+
+      <header class="relative z-[1] flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
+        <div class="flex flex-col gap-3">
+          <div class="flex items-center gap-3">
+            <img src="<%= brand.logoSmall || '/img/logo-32x32.svg' %>" alt="<%= brand.name || 'Nome da Pelada' %>" class="h-7 w-7 object-contain opacity-80" />
+            <span class="text-[14px] font-extrabold uppercase tracking-[0.24em] text-[#ffb36a]"><%= brand.name || "Nome da Pelada" %></span>
+          </div>
+          <div class="space-y-2">
+            <h2 class="font-title text-[4.2rem] leading-[0.94] text-horriver-light">Destaques da noite</h2>
+            <p class="text-[1rem] font-medium leading-relaxed text-horriver-gray/80">
+              Versao pronta para compartilhar com os premios da rodada.
+            </p>
+          </div>
+        </div>
+
+        <div class="min-w-[220px] pt-2 flex flex-col items-end gap-3">
+          <span class="h-px w-20 bg-gradient-to-r from-transparent to-white/20 opacity-70"></span>
+          <div class="text-right">
+            <p class="text-[10px] uppercase tracking-[0.18em] text-horriver-gray/66">Pelada</p>
+            <p class="mt-2 text-[1.05rem] font-semibold text-horriver-light"><%= match.description || "Pelada" %></p>
+            <p class="mt-1 text-[12px] uppercase tracking-[0.16em] text-horriver-gray/56"><%= matchDateLabel %></p>
+          </div>
+        </div>
+      </header>
+
+      <div class="awards-card-divider relative z-[1] mt-8"></div>
+
+      <section class="awards-card-panel relative z-[1] p-5 md:p-6">
+        <div class="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+          <div class="flex items-center gap-4">
+            <div class="h-28 w-28 overflow-hidden rounded-[1.7rem] border border-horriver-orange/25 bg-black/30 shadow-[0_12px_28px_rgba(0,0,0,0.22)]">
+              <img
+                src="<%= photoFor(craque?.player, 224) %>"
+                alt="<%= craque?.player?.name || 'Craque da Pelada' %>"
+                class="h-full w-full object-cover"
+              />
+            </div>
+            <div class="space-y-2">
+              <p class="text-[11px] uppercase tracking-[0.2em] text-horriver-gray/76">Craque da Pelada</p>
+              <% if (craque) { %>
+                <p class="font-title text-[4rem] leading-[0.92] text-horriver-light"><%= craque.player?.name || "Jogador" %></p>
+                <p class="text-[15px] font-medium tracking-[0.05em] uppercase text-horriver-gray/66">
+                  <%= playerPosition(craque) %>
+                </p>
+              <% } else { %>
+                <p class="text-base text-horriver-gray">Sem dados suficientes para definir o craque.</p>
+              <% } %>
+            </div>
+          </div>
+
+          <div class="min-w-[180px] rounded-[1.45rem] border border-horriver-orange/24 bg-black/22 px-5 py-4 text-center">
+            <p class="text-[10px] uppercase tracking-[0.18em] text-horriver-gray/72">Nota final</p>
+            <p class="mt-3 font-title text-[5rem] leading-none text-horriver-orange">
+              <%= craque ? fmtScore(craque.finalRating) : "-" %>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="relative z-[1] mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <% awardList.forEach(([label, item]) => { %>
+          <article class="awards-card-grid-item p-5">
+            <p class="text-[10px] uppercase tracking-[0.18em] text-horriver-gray/72"><%= label %></p>
+            <% if (item) { %>
+              <div class="mt-4 flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                  <div class="h-16 w-16 overflow-hidden rounded-[1.05rem] border border-white/8 bg-black/28">
+                    <img
+                      src="<%= photoFor(item.player, 128) %>"
+                      alt="<%= item.player?.name || 'Jogador' %>"
+                      class="h-full w-full object-cover"
+                    />
+                  </div>
+                  <div class="space-y-1">
+                    <p class="text-[1.15rem] font-semibold leading-tight tracking-[0.01em] text-horriver-light">
+                      <%= item.player?.name || "Jogador" %>
+                    </p>
+                    <p class="text-[12px] uppercase tracking-[0.12em] text-horriver-gray/60">
+                      <%= playerPosition(item) %>
+                    </p>
+                  </div>
+                </div>
+                <div class="rounded-[1.2rem] border border-white/8 bg-white/[0.03] px-4 py-3 text-center">
+                  <p class="text-[10px] uppercase tracking-[0.16em] text-horriver-gray/68">Final</p>
+                  <p class="mt-2 text-[1.85rem] font-semibold leading-none text-horriver-orange"><%= fmtScore(item.finalRating) %></p>
+                </div>
+              </div>
+            <% } else { %>
+              <p class="mt-4 text-sm text-horriver-gray">Sem dados suficientes.</p>
+            <% } %>
+          </article>
+        <% }); %>
+      </section>
+
+      <footer class="relative z-[1] mt-7 flex items-center justify-between border-t border-white/6 pt-4 text-[10.5px] uppercase tracking-[0.15em] text-horriver-gray/36">
+        <span><%= brand.url || "site-da-pelada.com" %></span>
+        <span><%= brand.instagramLabel || "@sua_pelada" %></span>
+      </footer>
+    </div>
+  </div>
+</section>
+
+<script>
+  const btn = document.getElementById("download-awards-image");
+  if (btn) {
+    btn.addEventListener("click", async () => {
+      const matchId = btn.dataset.matchId;
+      const original = btn.textContent;
+      btn.textContent = "Gerando...";
+      btn.disabled = true;
+      try {
+        const res = await fetch(`/share/voting-result.jpg?matchId=${matchId}`);
+        if (!res.ok) throw new Error(`Erro ${res.status}`);
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `resultado-votacao-${matchId}.jpg`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        console.error("[export] Falha:", err);
+        alert("Não foi possível gerar a imagem. Tente novamente.");
+      } finally {
+        btn.textContent = original;
+        btn.disabled = false;
+      }
+    });
+  }
+</script>

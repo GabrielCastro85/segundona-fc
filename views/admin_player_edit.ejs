@@ -1,0 +1,92 @@
+<% /* =====================================================================
+//  Página de Edição de Jogador
+// ================================================================== */ %>
+
+<div>
+  <a href="/admin#jogadores" class="text-sm text-horriver-orange hover:underline mb-4 inline-block">&larr; Voltar para o painel</a>
+  
+  <h2 class="font-title text-2xl text-horriver-orange mb-4">
+    Editando: <span class="text-horriver-light"><%= player.name %></span>
+  </h2>
+
+  <form action="/admin/players/<%= player.id %>/edit<%= typeof csrfToken !== 'undefined' && csrfToken ? '?_csrf=' + encodeURIComponent(csrfToken) : '' %>" method="POST" enctype="multipart/form-data" class="max-w-lg bg-horriver-gray-dark p-6 rounded-md space-y-4" data-autosave="true" data-toast="Jogador atualizado.">
+    
+    <div>
+      <label for="name" class="block text-xs mb-1">Nome Completo</label>
+      <input type="text" name="name" id="name" value="<%= player.name %>" required class="w-full bg-horriver-dark border border-horriver-gray-light rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-horriver-orange">
+    </div>
+
+    <div>
+      <label for="nickname" class="block text-xs mb-1">Apelido</label>
+      <input type="text" name="nickname" id="nickname" value="<%= player.nickname || '' %>" class="w-full bg-horriver-dark border border-horriver-gray-light rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-horriver-orange">
+    </div>
+    
+    <div>
+      <label for="whatsapp" class="block text-xs mb-1">Telefone (WhatsApp)</label>
+      <input type="tel" name="whatsapp" id="whatsapp" value="<%= player.whatsapp ? player.whatsapp.slice(2) : '' %>" placeholder="21999998888" class="w-full bg-horriver-dark border border-horriver-gray-light rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-horriver-orange">
+      <p class="text-xs text-horriver-gray mt-1">Apenas n&uacute;meros (DDD + n&uacute;mero). O +55 ser&aacute; adicionado automaticamente.</p>
+    </div>
+
+    <div>
+      <label for="position" class="block text-xs mb-1">Posi&ccedil;&atilde;o Principal</label>
+      <select name="position" id="position" required class="w-full bg-horriver-dark border border-horriver-gray-light rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-horriver-orange">
+        <option value="GOL" <%= player.position === 'GOL' ? 'selected' : '' %>>Goleiro</option>
+        <option value="ZAG" <%= player.position === 'ZAG' ? 'selected' : '' %>>Zagueiro</option>
+        <option value="MEI" <%= player.position === 'MEI' ? 'selected' : '' %>>Meio-campo</option>
+        <option value="ATA" <%= player.position === 'ATA' ? 'selected' : '' %>>Atacante</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="baseOverall" class="block text-xs mb-1">Overall base</label>
+      <input
+        type="number"
+        name="baseOverall"
+        id="baseOverall"
+        min="0"
+        max="100"
+        step="1"
+        value="<%= typeof player.baseOverall === 'number' ? player.baseOverall : 60 %>"
+        class="w-full bg-horriver-dark border border-horriver-gray-light rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-horriver-orange"
+      />
+      <p class="text-xs text-horriver-gray mt-1">Valor de refer&ecirc;ncia do jogador. O overall autom&aacute;tico parte dele e vai se ajustando conforme o desempenho recente.</p>
+    </div>
+
+    <div>
+      <label for="player-photo" class="block text-xs mb-1">Alterar Foto</label>
+      <div class="flex items-center gap-4">
+        <img src="<%= player.photoUrl || '/img/logo-64x64.svg' %>" alt="Foto atual" class="w-12 h-12 rounded-full object-cover bg-horriver-dark">
+        <input type="file" name="photo" id="player-photo" class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-horriver-orange file:text-horriver-dark hover:file:bg-horriver-orange/80">
+      </div>
+      <p class="text-xs text-horriver-gray mt-1">Deixe em branco para manter a foto atual.</p>
+    </div>
+
+    <div class="grid grid-cols-1 gap-3">
+      <div>
+        <label for="hallStatus" class="block text-xs mb-1">Status</label>
+        <select name="hallStatus" id="hallStatus" class="w-full bg-horriver-dark border border-horriver-gray-light rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-horriver-orange">
+          <option value="active" <%= player.hallReason !== 'Aposentado' ? 'selected' : '' %>>Ativo</option>
+          <option value="retired" <%= player.hallReason === 'Aposentado' ? 'selected' : '' %>>Aposentado (aparece no Hall)</option>
+        </select>
+        <p class="text-xs text-horriver-gray mt-1">Selecione &ldquo;Aposentado&rdquo; para aparecer na se&ccedil;&atilde;o de aposentados do Hall.</p>
+      </div>
+      <div>
+        <label for="hallReason" class="block text-xs mb-1">Motivo (opcional)</label>
+        <input type="text" name="hallReasonText" id="hallReason" value="<%= player.hallReason && player.hallReason !== 'Aposentado' ? player.hallReason : '' %>" class="w-full bg-horriver-dark border border-horriver-gray-light rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-horriver-orange" placeholder="Motivo da homenagem/aposentadoria">
+      </div>
+    </div>
+
+    <div class="pt-4">
+      <button type="submit" class="w-full bg-horriver-orange text-horriver-dark font-bold py-2 rounded-md hover:bg-opacity-80 transition">Salvar Altera&ccedil;&otilde;es</button>
+    </div>
+  </form>
+
+  <form action="/admin/players/<%= player.id %>/delete" method="POST" class="max-w-lg mt-4" onsubmit="return confirm('Excluir jogador e todo o histórico?');">
+    <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+    <% } %>
+    <button type="submit" class="w-full border border-red-500/70 text-red-300 font-bold py-2 rounded-md hover:bg-red-500/10 transition">
+      Excluir jogador definitivamente
+    </button>
+  </form>
+</div>

@@ -1,0 +1,418 @@
+﻿require("dotenv").config();
+
+const express = require("express");
+const path = require("path");
+const fs = require("fs");
+const cookieParser = require("cookie-parser");
+const expressLayouts = require("express-ejs-layouts");
+const compression = require("compression");
+const helmet = require("helmet");
+const csrf = require("csurf");
+
+const prisma = require("./utils/db");
+const { verifyToken } = require("./utils/auth");
+const { scheduleBackup } = require("./utils/backup");
+const brand = require("./config/brand");
+
+const indexRouter = require("./routes/index");
+const adminRouter = require("./routes/admin");
+const adminFinanceRouter = require("./routes/admin_finance");
+const loginRouter = require("./routes/login");
+const rankingsRouter = require("./routes/rankings");
+const elencoRouter = require("./routes/elenco");
+const sobreRouter = require("./routes/sobre");
+const awardsRouter = require("./routes/awards"); // ? NOVO: rota da premiação
+const playerRouter = require("./routes/player");
+const shareRouter = require("./routes/share");
+const voteRouter = require("./routes/vote");
+const monthlyVoteRouter = require("./routes/monthly_vote");
+const matchesRouter = require("./routes/matches");
+const comparatorRouter = require("./routes/comparator");
+let sharp = null;
+try {
+  sharp = require("sharp");
+  sharp.concurrency(1);
+  sharp.cache({ memory: 32, files: 20, items: 100 });
+} catch (err) {
+  console.warn("Sharp not available, thumbnails disabled.");
+}
+
+const PUBLIC_DIR = path.join(__dirname, "public");
+const UPLOADS_DIR = path.join(PUBLIC_DIR, "uploads");
+const CSS_BUNDLE_PATH = path.join(PUBLIC_DIR, "css", "output.css");
+const FINANCE_CSS_BUNDLE_PATH = path.join(PUBLIC_DIR, "css", "admin-finance.css");
+const FINANCE_JS_BUNDLE_PATH = path.join(PUBLIC_DIR, "js", "admin-finance.js");
+
+function getFileAssetVersion(targetPath, fallbackSeed = Date.now()) {
+  try {
+    return String(fs.statSync(targetPath).mtimeMs);
+  } catch (err) {
+    return String(fallbackSeed);
+  }
+}
+
+const ASSET_VERSION =
+  process.env.ASSET_VERSION || getFileAssetVersion(CSS_BUNDLE_PATH);
+const CUSTOM_CSS_VERSION = getFileAssetVersion(path.join(PUBLIC_DIR, "css", "custom.css"), ASSET_VERSION);
+const FINANCE_ASSET_VERSION = getFileAssetVersion(FINANCE_CSS_BUNDLE_PATH, ASSET_VERSION);
+const FINANCE_JS_ASSET_VERSION = getFileAssetVersion(FINANCE_JS_BUNDLE_PATH, FINANCE_ASSET_VERSION);
+
+function ensureDirectoryExists(targetPath) {
+  try {
+    fs.mkdirSync(targetPath, { recursive: true });
+  } catch (err) {
+    console.error(`?? Nao foi possivel garantir a pasta ${targetPath}:`, err);
+    throw err;
+  }
+}
+
+ensureDirectoryExists(UPLOADS_DIR);
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+const IS_PROD = process.env.NODE_ENV === "production";
+
+app.disable("x-powered-by");
+
+// ==============================
+// View engine (EJS + layouts)
+// ==============================
+app.set("views", path.join(__dirname, "views"));
+app.set("view engine", "ejs");
+app.use(expressLayouts);
+app.set("layout", "layout"); // usa views/layout.ejs como layout padrão
+app.locals.assetVersion = ASSET_VERSION;
+app.locals.customCssVersion = CUSTOM_CSS_VERSION;
+app.locals.financeAssetVersion = FINANCE_ASSET_VERSION;
+app.locals.financeJsAssetVersion = FINANCE_JS_ASSET_VERSION;
+app.locals.thumbUrl = (url, width) => {
+  if (!url || !width) return url;
+  if (!url.startsWith("/uploads/") && !url.startsWith("/img/")) return url;
+  const w = Math.max(40, Math.min(1200, parseInt(width, 10) || 0));
+  if (!w) return url;
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}w=${w}`;
+};
+app.locals.brand = brand;
+
+// ==============================
+// Middlewares básicos
+// ==============================
+app.use(compression());
+app.use(helmet({
+  contentSecurityPolicy: false,       // CDNs externos usados em telas interativas (cropperjs, unpkg)
+  crossOriginEmbedderPolicy: false,   // iframes e recursos cross-origin usados no site
+}));
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+app.use(cookieParser());
+const csrfProtection = csrf({
+  cookie: {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: IS_PROD,
+  },
+});
+app.use((req, res, next) => {
+  if (
+    req.path.startsWith("/vote") ||
+    req.path.startsWith("/votar") ||
+    req.path.startsWith("/monthly-vote") ||
+    req.path.startsWith("/monitoring/frontend-error")
+  ) {
+    return next();
+  }
+  return csrfProtection(req, res, next);
+});
+app.use((req, res, next) => {
+  if (typeof req.csrfToken === "function") {
+    res.locals.csrfToken = req.csrfToken();
+  } else {
+    res.locals.csrfToken = null;
+  }
+  next();
+});
+app.get(["/uploads/*", "/img/*"], async (req, res, next) => {
+  const width = parseInt(req.query.w, 10);
+  if (!sharp || !width || width < 40 || width > 1600) return next();
+
+  try {
+    const relPath = decodeURIComponent(req.path).replace(/^\/+/, "");
+    const absPath = path.join(PUBLIC_DIR, relPath);
+    if (!absPath.startsWith(PUBLIC_DIR)) return next();
+    if (!fs.existsSync(absPath)) return next();
+
+    const ext = path.extname(absPath).toLowerCase();
+    if (![".jpg", ".jpeg", ".png", ".webp"].includes(ext)) return next();
+
+    const cacheDir = path.join(PUBLIC_DIR, ".thumbs", path.dirname(relPath));
+    const baseName = path.basename(relPath, ext);
+    const cacheFile = path.join(cacheDir, `${baseName}_w${width}.webp`);
+
+    if (!fs.existsSync(cacheDir)) {
+      fs.mkdirSync(cacheDir, { recursive: true });
+    }
+
+    if (!fs.existsSync(cacheFile)) {
+      await sharp(absPath)
+        .resize({ width, withoutEnlargement: true })
+        .webp({ quality: 76 })
+        .toFile(cacheFile);
+    }
+
+    res.set("Cache-Control", "public, max-age=2592000, immutable");
+    return res.sendFile(cacheFile);
+  } catch (err) {
+    console.warn("Thumbnail error:", err);
+    return next();
+  }
+});
+app.use(
+  express.static(PUBLIC_DIR, {
+    maxAge: "7d",
+    setHeaders: (res, filePath) => {
+      if (!IS_PROD) {
+        res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+        res.setHeader("Pragma", "no-cache");
+        res.setHeader("Expires", "0");
+      }
+
+      if (/\.svg$/i.test(filePath)) {
+        res.setHeader("Content-Security-Policy", "sandbox");
+        res.setHeader("X-Content-Type-Options", "nosniff");
+      }
+      if (filePath.includes(`${path.sep}.thumbs${path.sep}`)) {
+        res.setHeader("Cache-Control", "public, max-age=2592000, immutable");
+        return;
+      }
+      if (/\.(css|js|png|jpe?g|webp|svg)$/i.test(filePath)) {
+        res.setHeader("Cache-Control", "public, max-age=2592000, immutable");
+      }
+    },
+  })
+);
+app.use((req, res, next) => {
+  res.locals.isProd = process.env.NODE_ENV === "production";
+  res.locals.brand = {
+    ...brand,
+    url: brand.url || `${req.protocol}://${req.get("host")}`,
+  };
+  next();
+});
+app.use((req, res, next) => {
+  if (req.method !== "GET") return next();
+  const wantsHtml = req.accepts("html");
+  if (
+    wantsHtml &&
+    req.path.startsWith("/admin") ||
+    wantsHtml &&
+    req.path.startsWith("/login") ||
+    wantsHtml &&
+    req.path.startsWith("/vote") ||
+    wantsHtml &&
+    req.path.startsWith("/votar") ||
+    wantsHtml &&
+    req.path.startsWith("/monthly-vote") ||
+    wantsHtml &&
+    req.path.startsWith("/logout")
+  ) {
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.set("Pragma", "no-cache");
+    res.set("Expires", "0");
+    return next();
+  }
+  res.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
+  next();
+});
+
+// ==============================
+// Skins dinâmicas
+// ==============================
+app.use((req, res, next) => {
+  const allowedSkins = ["default", "game-day"];
+  let skin = null;
+
+  // Prioridade: query > cookie > automática (terça)
+  if (req.query.skin && allowedSkins.includes(req.query.skin)) {
+    skin = req.query.skin;
+    // persiste override por 7 dias
+    res.cookie("skin", skin, { maxAge: 7 * 24 * 60 * 60 * 1000 });
+  } else if (req.cookies?.skin && allowedSkins.includes(req.cookies.skin)) {
+    skin = req.cookies.skin;
+  }
+
+  if (!skin) {
+    const now = new Date();
+    const isTuesday = now.getDay() === 2; // terça-feira
+    skin = isTuesday ? "game-day" : "default";
+  }
+
+  res.locals.skin = skin;
+  res.locals.isGameDay = skin === "game-day";
+  next();
+});
+
+// ==============================
+// Middleware: autenticação admin via JWT no cookie
+// ==============================
+async function setAdminFromToken(req, res, next) {
+  try {
+    const token = req.cookies?.adminToken;
+    if (!token) {
+      req.admin = null;
+      res.locals.admin = null;
+      return next();
+    }
+
+    const payload = verifyToken(token);
+    if (!payload?.id) {
+      req.admin = null;
+      res.locals.admin = null;
+      return next();
+    }
+
+    const admin = await prisma.admin.findUnique({ where: { id: payload.id } });
+    if (!admin) {
+      req.admin = null;
+      res.locals.admin = null;
+      return next();
+    }
+
+    req.admin = admin;
+    res.locals.admin = admin;
+    next();
+  } catch (err) {
+    console.error("?? Erro ao verificar token de admin:", err);
+    req.admin = null;
+    res.locals.admin = null;
+    next();
+  }
+}
+
+app.use(setAdminFromToken);
+
+// ?? Disponibiliza o admin logado para as views
+app.use((req, res, next) => {
+  res.locals.admin = req.admin || null;
+  next();
+});
+
+// Deixa disponível a rota atual (pra menus ativos, etc.)
+app.use((req, res, next) => {
+  res.locals.currentPath = req.path;
+  res.locals.isExport = req.query.export === "1";
+  next();
+});
+
+app.use((req, res, next) => {
+  const baseUrl =
+    brand.url || process.env.SITE_URL || `${req.protocol}://${req.get("host")}`;
+  const metaMap = [
+    { path: "/", description: `Estatisticas, rankings e resenha da pelada ${brand.name}.` },
+    { path: "/rankings", description: "Rankings atualizados da pelada com filtros por periodo." },
+    { path: "/elenco", description: `Elenco completo de jogadores da ${brand.name}.` },
+    { path: "/peladas", description: "Lista de peladas com filtros por mes e ano." },
+    { path: "/hall-da-fama", description: `Hall da fama e premiacoes da ${brand.name}.` },
+    { path: "/premiacao", description: `Premiacoes e destaques da ${brand.name}.` },
+    { path: "/sobre", description: `Historia e informacoes da ${brand.name}.` },
+  ];
+
+  const match = metaMap.find((item) =>
+    req.path === item.path || req.path.startsWith(`${item.path}/`)
+  );
+  const fallbackDescription =
+    brand.description;
+
+  res.locals.metaDescription =
+    res.locals.metaDescription || (match && match.description) || fallbackDescription;
+  res.locals.metaUrl = res.locals.metaUrl || `${baseUrl}${req.originalUrl}`;
+  res.locals.metaImage =
+    res.locals.metaImage || `${baseUrl}${brand.logoLarge}`;
+  next();
+});
+
+app.post("/monitoring/frontend-error", (req, res) => {
+  const payload = req.body || {};
+  const safePayload = {
+    type: payload.type || "error",
+    message: payload.message,
+    url: payload.url,
+    stack: payload.stack,
+    userAgent: payload.userAgent,
+    createdAt: new Date().toISOString(),
+  };
+  console.warn("Frontend error:", safePayload);
+  res.status(204).end();
+});
+
+// ==============================
+// ?? Rotas
+// ==============================
+app.use("/", loginRouter);
+app.use("/", indexRouter);
+app.use("/rankings", rankingsRouter);
+app.use("/elenco", elencoRouter);
+app.use("/sobre", sobreRouter);
+app.use("/premiacao", awardsRouter); // ? NOVO: página de premiação
+app.use("/jogador", playerRouter);
+app.use("/share", shareRouter);
+app.use("/admin", adminFinanceRouter);
+app.use("/admin", adminRouter);
+app.use("/votar", voteRouter);
+app.use("/vote", voteRouter);
+app.use("/monthly-vote", monthlyVoteRouter);
+app.use("/matches", matchesRouter);
+app.use("/comparar", comparatorRouter);
+
+
+// ==============================
+// 404 – sempre por último
+// ==============================
+app.use((req, res) => {
+  res.status(404).render("404", { title: "404" });
+});
+
+// Handler de CSRF
+app.use((err, req, res, next) => {
+  if (err && err.code === "EBADCSRFTOKEN") {
+    return res.status(403).send("Sessão inválida. Atualize a página e tente novamente.");
+  }
+  next(err);
+});
+
+// Handler genérico de erro
+app.use((err, req, res, next) => {
+  console.error("?? Erro inesperado:", err);
+  res.status(500).send("Erro interno do servidor");
+});
+
+// ==============================
+// ?? Start
+// ==============================
+const server = app.listen(PORT, () => {
+  console.log(`?? Servidor rodando na porta ${PORT}`);
+  console.log(`?? http://localhost:${PORT}`);
+});
+
+server.on("error", (err) => {
+  if (err && err.code === "EADDRINUSE") {
+    console.error(`?? A porta ${PORT} já está em uso.`);
+    console.error("Feche a outra instância do projeto ou finalize o processo que está usando essa porta antes de subir o servidor.");
+    process.exit(1);
+  }
+
+  throw err;
+});
+
+// ==============================
+// Backup automático (1x por dia)
+// ==============================
+if (process.env.NODE_ENV === "production") {
+  scheduleBackup({ reason: "startup" });
+  setInterval(() => {
+    scheduleBackup({ reason: "auto" });
+  }, 24 * 60 * 60 * 1000);
+}
+
+
+

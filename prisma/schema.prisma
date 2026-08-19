@@ -1,0 +1,647 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id                  Int                  @id @default(autoincrement())
+  email               String               @unique
+  passwordHash        String
+  voteSessions        VoteSession[]        @relation("AdminVoteSessions")
+  auditLogs           AuditLog[]
+  financeEventLogs    FinanceEventLog[]
+  monthlyVoteSessions MonthlyVoteSession[]
+  recurringExpenses   RecurringExpense[]
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  adminId    Int?
+  adminEmail String?
+  method     String
+  path       String
+  action     String
+  summary    String?
+  details    Json?
+  createdAt  DateTime @default(now())
+  admin      Admin?   @relation(fields: [adminId], references: [id])
+
+  @@index([createdAt])
+  @@index([adminId])
+}
+
+model Player {
+  id                        Int                    @id @default(autoincrement())
+  name                      String
+  nickname                  String?
+  position                  String
+  photoUrl                  String?
+  totalGoals                Int                    @default(0)
+  totalAssists              Int                    @default(0)
+  totalSaves                Int                    @default(0)
+  totalMatches              Int                    @default(0)
+  totalPhotos               Int                    @default(0)
+  totalRating               Float                  @default(0)
+  financeActive             Boolean                @default(true)
+  isMonthlyMember           Boolean                @default(true)
+  financeParticipantType    FinanceParticipantType @default(MONTHLY)
+  financeAmountOverride     Decimal?               @db.Decimal(10, 2)
+  financeMatchLimit         Int?
+  financeExtraMatchAmount   Decimal?               @db.Decimal(10, 2)
+  financeAutoDiscountAmount Decimal                @default(0) @db.Decimal(10, 2)
+  financeNotes              String?
+  createdAt                 DateTime               @default(now())
+  updatedAt                 DateTime               @updatedAt
+  whatsapp                  String?
+  hallBadges                Json?
+  hallInductedAt            DateTime?
+  hallReason                String?
+  hallTitle                 String?
+  isHallOfFame              Boolean                @default(false)
+  baseOverall               Float                  @default(60)
+  overallDynamic            Float?
+  overallLastUpdated        DateTime?              @db.Timestamp(6)
+  monthlyAwards             MonthlyAward[]         @relation("MonthlyCraque")
+  overallHistory            OverallHistory[]
+  achievements              PlayerAchievement[]
+  stats                     PlayerStat[]
+  seasonAwards              SeasonAward[]
+  voteBallots               VoteBallot[]           @relation("BestOverallPlayer")
+  VoteChoice                VoteChoice[]
+  VoteLink                  VoteLink[]
+  voteRankings              VoteRanking[]
+  voteTokens                VoteToken[]
+  voteRatings               VoteRating[]
+  monthlyVoteTokens         MonthlyVoteToken[]
+  monthlyVoteChoices        MonthlyVoteBallot[]    @relation("MonthlyVoteCandidate")
+  weeklyAwards              WeeklyAward[]          @relation("WeeklyBest")
+  monthlyFees               MonthlyFee[]
+  cashTransactions          CashTransaction[]
+}
+
+model Match {
+  id            Int            @id @default(autoincrement())
+  playedAt      DateTime
+  description   String?
+  winnerTeam    String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  votingToken   String?
+  votingStatus  String?        @default("CLOSED")
+  winnerColor   String?
+  lineupDraws   LineupDraw[]
+  stats         PlayerStat[]
+  VoteLink      VoteLink[]
+  voteSessions  VoteSession[]
+  weeklyAwards  WeeklyAward[]  @relation("WeeklyMatch")
+  tournament    Tournament?
+  guestPayments GuestPayment[]
+
+  @@index([playedAt])
+}
+
+model Tournament {
+  id        Int              @id @default(autoincrement())
+  matchId   Int              @unique
+  title     String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  match     Match            @relation(fields: [matchId], references: [id])
+  teams     TournamentTeam[]
+  games     TournamentGame[]
+}
+
+model TournamentTeam {
+  id           Int              @id @default(autoincrement())
+  tournamentId Int
+  name         String
+  color        String?
+  seed         Int?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  tournament   Tournament       @relation(fields: [tournamentId], references: [id])
+  homeGames    TournamentGame[] @relation("HomeTeam")
+  awayGames    TournamentGame[] @relation("AwayTeam")
+  winnerGames  TournamentGame[] @relation("WinnerTeam")
+}
+
+model TournamentGame {
+  id            Int                      @id @default(autoincrement())
+  tournamentId  Int
+  stage         TournamentStage
+  round         Int?
+  homeTeamId    Int
+  awayTeamId    Int
+  homeGoals     Int?
+  awayGoals     Int?
+  homePenalties Int?
+  awayPenalties Int?
+  winnerTeamId  Int?
+  decidedBy     TournamentGameDecidedBy?
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  tournament    Tournament               @relation(fields: [tournamentId], references: [id])
+  homeTeam      TournamentTeam           @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeam      TournamentTeam           @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  winnerTeam    TournamentTeam?          @relation("WinnerTeam", fields: [winnerTeamId], references: [id])
+}
+
+model PlayerStat {
+  id              Int      @id @default(autoincrement())
+  playerId        Int
+  matchId         Int
+  present         Boolean  @default(false)
+  goals           Int      @default(0)
+  assists         Int      @default(0)
+  saves           Int?
+  rating          Float?
+  appearedInPhoto Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  match           Match    @relation(fields: [matchId], references: [id])
+  player          Player   @relation(fields: [playerId], references: [id])
+
+  @@unique([playerId, matchId])
+  @@index([matchId])
+}
+
+model WeeklyAward {
+  id             Int      @id @default(autoincrement())
+  weekStart      DateTime @unique
+  teamPhotoUrl   String?
+  bestPlayerId   Int?
+  winningMatchId Int?
+  createdAt      DateTime @default(now())
+  bestPlayer     Player?  @relation("WeeklyBest", fields: [bestPlayerId], references: [id])
+  winningMatch   Match?   @relation("WeeklyMatch", fields: [winningMatchId], references: [id])
+}
+
+model MonthlyAward {
+  id        Int      @id @default(autoincrement())
+  month     Int
+  year      Int
+  craqueId  Int?
+  createdAt DateTime @default(now())
+  craque    Player?  @relation("MonthlyCraque", fields: [craqueId], references: [id])
+
+  @@unique([month, year])
+}
+
+model SeasonAward {
+  id             Int                 @id @default(autoincrement())
+  year           Int
+  category       SeasonAwardCategory
+  playerId       Int
+  featuredOnHome Boolean             @default(false)
+  createdAt      DateTime            @default(now())
+  player         Player              @relation(fields: [playerId], references: [id])
+
+  @@unique([year, category], name: "year_category")
+}
+
+model VoteSession {
+  id               Int         @id @default(autoincrement())
+  matchId          Int
+  expiresAt        DateTime?
+  createdByAdminId Int?
+  createdAt        DateTime    @default(now())
+  createdByAdmin   Admin?      @relation("AdminVoteSessions", fields: [createdByAdminId], references: [id])
+  match            Match       @relation(fields: [matchId], references: [id])
+  tokens           VoteToken[]
+}
+
+model VoteToken {
+  id            Int         @id @default(autoincrement())
+  token         String      @unique
+  voteSessionId Int
+  playerId      Int
+  usedAt        DateTime?
+  createdAt     DateTime    @default(now())
+  ballot        VoteBallot?
+  player        Player      @relation(fields: [playerId], references: [id])
+  session       VoteSession @relation(fields: [voteSessionId], references: [id])
+
+  @@unique([voteSessionId, playerId])
+  @@index([playerId])
+}
+
+model VoteBallot {
+  id                  Int           @id @default(autoincrement())
+  voteTokenId         Int           @unique
+  bestOverallPlayerId Int?
+  isInvalid           Boolean       @default(false)
+  invalidReason       String?
+  invalidCode         String?
+  validatedManually   Boolean       @default(false)
+  validatedManuallyAt DateTime?
+  createdAt           DateTime      @default(now())
+  bestOverallPlayer   Player?       @relation("BestOverallPlayer", fields: [bestOverallPlayerId], references: [id])
+  token               VoteToken     @relation(fields: [voteTokenId], references: [id])
+  rankings            VoteRanking[]
+  ratings             VoteRating[]
+
+  @@index([isInvalid])
+  @@index([validatedManually])
+}
+
+model VoteRating {
+  id           Int        @id @default(autoincrement())
+  voteBallotId Int
+  playerId     Int
+  rating       Int
+  createdAt    DateTime   @default(now())
+  player       Player     @relation(fields: [playerId], references: [id])
+  ballot       VoteBallot @relation(fields: [voteBallotId], references: [id])
+
+  @@unique([voteBallotId, playerId])
+  @@index([playerId])
+}
+
+model VoteRanking {
+  id           Int        @id @default(autoincrement())
+  voteBallotId Int
+  position     String
+  playerId     Int
+  rank         Int
+  createdAt    DateTime   @default(now())
+  player       Player     @relation(fields: [playerId], references: [id])
+  ballot       VoteBallot @relation(fields: [voteBallotId], references: [id])
+
+  @@unique([voteBallotId, position, rank])
+  @@index([playerId])
+}
+
+model VoteLink {
+  id         Int          @id @default(autoincrement())
+  token      String       @unique
+  createdAt  DateTime     @default(now())
+  usedAt     DateTime?
+  playerId   Int
+  matchId    Int
+  phone      String?
+  VoteChoice VoteChoice[]
+  Match      Match        @relation(fields: [matchId], references: [id])
+  Player     Player       @relation(fields: [playerId], references: [id])
+
+  @@index([playerId])
+  @@index([matchId])
+}
+
+model MonthlyVoteSession {
+  id               Int                @id @default(autoincrement())
+  month            Int
+  year             Int
+  candidates       Json
+  createdAt        DateTime           @default(now())
+  expiresAt        DateTime?
+  createdByAdminId Int?
+  createdByAdmin   Admin?             @relation(fields: [createdByAdminId], references: [id])
+  tokens           MonthlyVoteToken[]
+
+  @@unique([month, year])
+}
+
+model MonthlyVoteToken {
+  id        Int                @id @default(autoincrement())
+  token     String             @unique
+  sessionId Int
+  playerId  Int
+  usedAt    DateTime?
+  createdAt DateTime           @default(now())
+  ballot    MonthlyVoteBallot?
+  session   MonthlyVoteSession @relation(fields: [sessionId], references: [id])
+  player    Player             @relation(fields: [playerId], references: [id])
+
+  @@unique([sessionId, playerId])
+  @@index([playerId])
+}
+
+model MonthlyVoteBallot {
+  id          Int              @id @default(autoincrement())
+  tokenId     Int              @unique
+  candidateId Int
+  createdAt   DateTime         @default(now())
+  token       MonthlyVoteToken @relation(fields: [tokenId], references: [id])
+  candidate   Player           @relation("MonthlyVoteCandidate", fields: [candidateId], references: [id])
+
+  @@index([candidateId])
+}
+
+model VoteChoice {
+  id             Int          @id @default(autoincrement())
+  category       VoteCategory
+  createdAt      DateTime     @default(now())
+  voteLinkId     Int
+  targetPlayerId Int
+  Player         Player       @relation(fields: [targetPlayerId], references: [id])
+  VoteLink       VoteLink     @relation(fields: [voteLinkId], references: [id])
+
+  @@index([voteLinkId])
+  @@index([targetPlayerId])
+}
+
+model Achievement {
+  id          Int                 @id @default(autoincrement())
+  description String
+  category    String
+  createdAt   DateTime            @default(now())
+  code        String              @unique
+  title       String
+  rarity      String
+  targetValue Int?
+  symbol      String?
+  isNumeric   Boolean             @default(false)
+  sortOrder   Int                 @default(0)
+  players     PlayerAchievement[]
+}
+
+model PlayerAchievement {
+  id            Int         @id @default(autoincrement())
+  playerId      Int
+  achievementId Int
+  unlockedAt    DateTime?
+  progressValue Int         @default(0)
+  createdAt     DateTime    @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime    @default(now()) @updatedAt @db.Timestamp(6)
+  achievement   Achievement @relation(fields: [achievementId], references: [id])
+  player        Player      @relation(fields: [playerId], references: [id])
+
+  @@unique([playerId, achievementId])
+  @@index([playerId])
+  @@index([achievementId])
+}
+
+model OverallHistory {
+  id           Int      @id @default(autoincrement())
+  playerId     Int
+  overall      Float
+  window       String?
+  source       Json?
+  calculatedAt DateTime @default(now())
+  player       Player   @relation(fields: [playerId], references: [id])
+
+  @@index([playerId, calculatedAt])
+}
+
+model LineupDraw {
+  id         Int      @id @default(autoincrement())
+  matchId    Int
+  seed       String
+  parameters Json?
+  result     Json
+  createdAt  DateTime @default(now())
+  match      Match    @relation(fields: [matchId], references: [id])
+
+  @@index([matchId, createdAt])
+}
+
+model FinanceSettings {
+  id                        Int                   @id @default(autoincrement())
+  defaultMonthlyAmount      Decimal               @default(50) @db.Decimal(10, 2)
+  dueDay                    Int                   @default(10)
+  latePerMatchAmount        Decimal               @default(25) @db.Decimal(10, 2)
+  pixKey                    String?
+  pixReceiverName           String?
+  defaultWhatsappMessage    String?
+  defaultIncludedMatches    Int                   @default(0)
+  defaultExtraMatchAmount   Decimal               @default(0) @db.Decimal(10, 2)
+  defaultAutoDiscountAmount Decimal               @default(0) @db.Decimal(10, 2)
+  chargeBehavior            FinanceChargeBehavior @default(ASSISTED)
+  autoGenerateCompetence    Boolean               @default(false)
+  createdAt                 DateTime              @default(now())
+  updatedAt                 DateTime              @updatedAt
+}
+
+model FinanceEventLog {
+  id         Int      @id @default(autoincrement())
+  action     String
+  entity     String
+  entityId   String?
+  sourceTab  String?
+  adminId    Int?
+  adminEmail String?
+  payload    Json?
+  createdAt  DateTime @default(now())
+  admin      Admin?   @relation(fields: [adminId], references: [id])
+
+  @@index([createdAt])
+  @@index([action])
+  @@index([entity, entityId])
+  @@index([adminId])
+}
+
+model RecurringExpense {
+  id               Int                        @id @default(autoincrement())
+  name             String
+  amount           Decimal                    @db.Decimal(10, 2)
+  category         FinanceTransactionCategory @default(COURT)
+  dayOfMonth       Int                        @default(1)
+  isActive         Boolean                    @default(true)
+  startMonth       Int
+  startYear        Int
+  endMonth         Int?
+  endYear          Int?
+  description      String?
+  note             String?
+  createdByAdminId Int?
+  createdAt        DateTime                   @default(now())
+  updatedAt        DateTime                   @updatedAt
+  createdByAdmin   Admin?                     @relation(fields: [createdByAdminId], references: [id])
+  runs             RecurringExpenseRun[]
+
+  @@index([isActive, startYear, startMonth])
+  @@index([category])
+  @@index([createdByAdminId])
+}
+
+model RecurringExpenseRun {
+  id                 Int              @id @default(autoincrement())
+  recurringExpenseId Int
+  month              Int
+  year               Int
+  cashTransactionId  Int              @unique
+  generatedAt        DateTime         @default(now())
+  recurringExpense   RecurringExpense @relation(fields: [recurringExpenseId], references: [id], onDelete: Cascade)
+  cashTransaction    CashTransaction  @relation(fields: [cashTransactionId], references: [id], onDelete: Cascade)
+
+  @@unique([recurringExpenseId, month, year], name: "recurring_expense_month_year")
+  @@index([year, month])
+}
+
+model MonthlyFee {
+  id                   Int                    @id @default(autoincrement())
+  playerId             Int
+  month                Int
+  year                 Int
+  amountDue            Decimal                @db.Decimal(10, 2)
+  amountPaid           Decimal                @default(0) @db.Decimal(10, 2)
+  status               MonthlyFeeStatus       @default(PENDING)
+  billingMode          MonthlyFeeBillingMode  @default(MONTHLY)
+  dueDate              DateTime?
+  paidAt               DateTime?
+  paymentMethod        FinancePaymentMethod?
+  note                 String?
+  participantType      FinanceParticipantType @default(MONTHLY)
+  baseAmount           Decimal                @default(0) @db.Decimal(10, 2)
+  autoDiscountAmount   Decimal                @default(0) @db.Decimal(10, 2)
+  manualDiscountAmount Decimal                @default(0) @db.Decimal(10, 2)
+  extraAmount          Decimal                @default(0) @db.Decimal(10, 2)
+  matchesPlayed        Int                    @default(0)
+  lateMatchesPlayed    Int                    @default(0)
+  matchLimitApplied    Int?
+  latePerMatchAmount   Decimal                @default(25) @db.Decimal(10, 2)
+  customAmountApplied  Boolean                @default(false)
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  player               Player                 @relation(fields: [playerId], references: [id])
+  transactions         CashTransaction[]
+
+  @@unique([playerId, month, year], name: "player_month_year")
+  @@index([playerId, year, month])
+  @@index([year, month, status])
+}
+
+model GuestPayment {
+  id              Int              @id @default(autoincrement())
+  guestName       String
+  date            DateTime
+  amount          Decimal          @db.Decimal(10, 2)
+  note            String?
+  month           Int?
+  year            Int?
+  matchId         Int?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  deletedAt       DateTime?
+  match           Match?           @relation(fields: [matchId], references: [id])
+  cashTransaction CashTransaction?
+
+  @@index([date])
+  @@index([year, month])
+  @@index([matchId])
+}
+
+model CashTransaction {
+  id                  Int                        @id @default(autoincrement())
+  type                FinanceTransactionType
+  category            FinanceTransactionCategory
+  amount              Decimal                    @db.Decimal(10, 2)
+  description         String
+  date                DateTime
+  note                String?
+  origin              FinanceTransactionOrigin   @default(MANUAL)
+  playerId            Int?
+  monthlyFeeId        Int?
+  guestPaymentId      Int?                       @unique
+  createdAt           DateTime                   @default(now())
+  updatedAt           DateTime                   @updatedAt
+  deletedAt           DateTime?
+  player              Player?                    @relation(fields: [playerId], references: [id])
+  monthlyFee          MonthlyFee?                @relation(fields: [monthlyFeeId], references: [id])
+  guestPayment        GuestPayment?              @relation(fields: [guestPaymentId], references: [id])
+  recurringExpenseRun RecurringExpenseRun?
+
+  @@index([date, type])
+  @@index([category])
+  @@index([playerId])
+  @@index([monthlyFeeId])
+}
+
+enum SeasonAwardCategory {
+  ARTILHEIRO
+  ASSISTENTE
+  MELHOR_JOGADOR
+  MELHOR_GOLEIRO
+  MELHOR_ZAGUEIRO
+  MELHOR_MEIA
+  MELHOR_ATACANTE
+  REI_DAS_FOTOS
+}
+
+enum VoteCategory {
+  GOLEIRO
+  ZAGUEIRO
+  MEIA
+  ATACANTE
+  CRAQUE
+}
+
+enum TournamentStage {
+  GROUP
+  SEMI
+  FINAL
+}
+
+enum TournamentGameDecidedBy {
+  ADVANTAGE
+  PENALTIES
+}
+
+enum MonthlyFeeStatus {
+  PENDING
+  PAID
+  PARTIAL
+  EXEMPT
+}
+
+enum MonthlyFeeBillingMode {
+  MONTHLY
+  PER_MATCH
+  LATE_PER_MATCH
+  EXEMPT
+}
+
+enum FinancePaymentMethod {
+  PIX
+  CASH
+  TRANSFER
+  CARD
+  OTHER
+}
+
+enum FinanceParticipantType {
+  MONTHLY
+  PER_MATCH
+  GUEST
+  EXEMPT
+  SPECIAL
+}
+
+enum FinanceChargeBehavior {
+  AUTOMATIC
+  ASSISTED
+  MANUAL_ONLY
+}
+
+enum FinanceTransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum FinanceTransactionOrigin {
+  MANUAL
+  MONTHLY_FEE
+  GUEST_PAYMENT
+  RECURRING_EXPENSE
+}
+
+enum FinanceTransactionCategory {
+  MONTHLY_FEE
+  GUEST
+  EXTRA
+  SPONSORSHIP
+  OTHER_INCOME
+  COURT
+  BALL
+  BIB
+  REFEREE
+  DRINK
+  MAINTENANCE
+  PRIZE
+  OTHER_EXPENSE
+}

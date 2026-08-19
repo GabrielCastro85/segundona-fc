@@ -1,0 +1,1056 @@
+<style>
+  /* Feedback suave para drag-and-drop */
+  li.dragging {
+    opacity: 0.6;
+    transform: scale(0.98);
+  }
+  .drop-target {
+    outline: 1px dashed rgba(249, 115, 22, 0.8);
+    background: rgba(249, 115, 22, 0.05);
+  }
+  .drop-placeholder {
+    border: 1px dashed rgba(249, 115, 22, 0.5);
+    border-radius: 8px;
+    height: 32px;
+    margin-top: 4px;
+    background: rgba(255, 255, 255, 0.04);
+  }
+  #sorterResults.teams-4 {
+    grid-template-columns: repeat(2, minmax(320px, 1fr));
+  }
+  #sorterResults [data-team] {
+    min-width: 0;
+  }
+  @media (max-width: 639px) {
+    #sorterResults {
+      grid-template-columns: 1fr !important;
+    }
+    #sorterResults.teams-4 {
+      grid-template-columns: 1fr !important;
+    }
+  }
+</style>
+
+<script>
+  (() => {
+    const statusEl = document.getElementById("sorterStatus");
+    try {
+    const matchId = <%= match.id %>;
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute("content");
+    const form = document.getElementById("sorterForm");
+    const resultsEl = document.getElementById("sorterResults");
+    const shareBox = document.getElementById("sorterShare");
+    const copyBtn = document.getElementById("copyTeamsBtn");
+    const imgBtn = document.getElementById("imgTeamsBtn");
+    const saveBtn = document.getElementById("saveTeamsBtn");
+    const sortBtn = document.getElementById("sortBtn");
+    const shareStatus = document.getElementById("shareStatus");
+    const playersPerTeamSelect = document.getElementById("playersPerTeam");
+    const importForm = document.getElementById("importTournamentForm");
+    const importBtn = document.getElementById("importTournamentBtn");
+    const importStatus = document.getElementById("importTournamentStatus");
+    const importNameInputs = Array.from(document.querySelectorAll("[data-import-name]"));
+    const importColorInputs = Array.from(document.querySelectorAll("[data-import-color]"));
+    const benchBox = document.getElementById("benchBox");
+    const goalkeeperBenchBox = document.getElementById("goalkeeperBenchBox");
+    const availableBox = document.getElementById("availableBox");
+    const initialLineup = <%- JSON.stringify(lineupData || null) %>;
+
+    const guestName = document.getElementById("guestName");
+    const guestPos = document.getElementById("guestPos");
+    const guestStr = document.getElementById("guestStr");
+    const guestsField = document.getElementById("guestsField");
+    const guestList = document.getElementById("guestList");
+    const addGuestBtn = document.getElementById("addGuestBtn");
+    const seedList = document.getElementById("seedList");
+
+    if (!form || !resultsEl) return;
+
+    const matchDateLabel = new Date("<%= ((match.playedAt || match.date) ? new Date(match.playedAt || match.date) : new Date()).toISOString() %>").toLocaleDateString("pt-BR", { timeZone: 'America/Sao_Paulo' });
+    const matchDescription = <%- JSON.stringify(match.description || "Pelada da semana") %>;
+
+    const guests = [];
+    const seedIds = new Set();
+    const guestsStorageKey = `hp_match_${matchId}_guests`;
+    const seedStorageKey = `hp_match_${matchId}_seeds`;
+    const playersPerTeamStorageKey = `hp_match_${matchId}_players_per_team`;
+
+    function getPlayersPerTeam() {
+      const value = Number(playersPerTeamSelect?.value || 6);
+      return [5, 6, 7, 8].includes(value) ? value : 6;
+    }
+
+    function getPresentIdsFromForm() {
+      const ids = Array.from(document.querySelectorAll('input[name^="present_"]'))
+        .filter((cb) => cb.checked)
+        .map((cb) => cb.name.replace("present_", ""))
+        .filter(Boolean);
+      return Array.from(new Set(ids));
+    }
+
+    function getPresentPlayersDetail() {
+      const players = Array.from(document.querySelectorAll('input[name^="present_"]'))
+        .filter((cb) => cb.checked)
+        .map((cb) => ({
+          id: cb.name.replace("present_", ""),
+          name: cb.dataset.playerName || "Jogador",
+          nickname: cb.dataset.playerNickname || "",
+          position: cb.dataset.playerPosition || "",
+          strength: Number(cb.dataset.playerStrength || cb.dataset.playerOverall || 0),
+        }));
+      const unique = new Map();
+      players.forEach((p) => {
+        if (!p.id || unique.has(p.id)) return;
+        unique.set(p.id, p);
+      });
+      return Array.from(unique.values());
+    }
+
+    function isGoalkeeperPosition(pos = "") {
+      const p = pos.toLowerCase();
+      return p.includes("goleiro") || p.includes("gol");
+    }
+
+    function escapePlayerHtml(value = "") {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function normalizeComparablePlayerValue(value = "") {
+      return String(value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLowerCase();
+    }
+
+    function getPlayerIdentity(player = {}) {
+      const name = String(player.name || player.nome || "").trim();
+      const nickname = String(player.nickname || "").trim();
+      const guest = player.guest === true || player.isGuest === true;
+      const hasDistinctNickname =
+        nickname &&
+        normalizeComparablePlayerValue(nickname) !== normalizeComparablePlayerValue(name);
+
+      return {
+        primary: hasDistinctNickname ? nickname : name || nickname || "Jogador",
+        secondary: hasDistinctNickname && name ? name : "",
+        guest,
+      };
+    }
+
+    function renderPlayerIdentity(player = {}, positionLabel = "") {
+      const identity = getPlayerIdentity(player);
+      const details = [];
+
+      if (identity.secondary) {
+        details.push(
+          `<span class="truncate text-horriver-gray">${escapePlayerHtml(identity.secondary)}</span>`
+        );
+      }
+      if (identity.guest) {
+        details.push(
+          '<span class="inline-flex items-center rounded-full border border-horriver-orange/30 bg-horriver-orange/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-horriver-orange">Convidado</span>'
+        );
+      }
+      if (positionLabel) {
+        details.push(
+          `<span class="text-horriver-orange">${escapePlayerHtml(positionLabel)}</span>`
+        );
+      }
+
+      return `
+        <div class="flex min-w-0 flex-col">
+          <span class="truncate font-medium text-horriver-light">${escapePlayerHtml(identity.primary)}</span>
+          ${
+            details.length
+              ? `<div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[11px] leading-tight">${details.join("")}</div>`
+              : ""
+          }
+        </div>
+      `;
+    }
+
+    function renderSeedList() {
+      if (!seedList) return;
+      const presentPlayers = getPresentPlayersDetail();
+      const allowedIds = new Set(presentPlayers.map((p) => p.id));
+      Array.from(seedIds).forEach((id) => {
+        if (!allowedIds.has(id)) seedIds.delete(id);
+      });
+      localStorage.setItem(seedStorageKey, JSON.stringify(Array.from(seedIds)));
+      if (!presentPlayers.length) {
+        seedList.innerHTML = `<span class="text-horriver-gray">Defina os presentes da rodada para escolher os cabeças de chave.</span>`;
+        return;
+      }
+      seedList.innerHTML = presentPlayers
+        .map((p) => {
+          const checked = seedIds.has(p.id) ? "checked" : "";
+          return `
+            <label class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/5 border border-horriver-border text-horriver-light cursor-pointer">
+              <input type="checkbox" class="accent-horriver-orange" data-seed-id="${p.id}" ${checked} />
+              <span>${p.name}</span>
+              <span class="text-horriver-gray text-[10px] uppercase">${p.position}</span>
+            </label>
+          `;
+        })
+        .join("");
+    }
+
+    seedList?.addEventListener("change", (e) => {
+      const cb = e.target.closest("input[data-seed-id]");
+      if (!cb) return;
+      const id = cb.dataset.seedId;
+      if (!id) return;
+      if (cb.checked) seedIds.add(id);
+      else seedIds.delete(id);
+      localStorage.setItem(seedStorageKey, JSON.stringify(Array.from(seedIds)));
+    });
+
+    document.querySelectorAll('input[name^="present_"]').forEach((cb) => {
+      cb.addEventListener("change", () => {
+        renderSeedList();
+        updateAvailableList();
+      });
+    });
+
+    // Restaura cabeças de chave ao recarregar
+    try {
+      const storedSeeds = JSON.parse(localStorage.getItem(seedStorageKey) || "[]");
+      if (Array.isArray(storedSeeds)) {
+        storedSeeds.forEach((id) => seedIds.add(String(id)));
+      }
+    } catch (err) {
+      console.warn("Falha ao restaurar seeds:", err);
+    }
+    renderSeedList();
+
+    try {
+      const storedPlayersPerTeam = localStorage.getItem(playersPerTeamStorageKey);
+      if (playersPerTeamSelect && ["5", "6", "7", "8"].includes(storedPlayersPerTeam || "")) {
+        playersPerTeamSelect.value = storedPlayersPerTeam;
+      }
+    } catch (err) {
+      console.warn("Falha ao restaurar jogadores por time:", err);
+    }
+
+    playersPerTeamSelect?.addEventListener("change", () => {
+      try {
+        localStorage.setItem(playersPerTeamStorageKey, String(getPlayersPerTeam()));
+      } catch (err) {
+        console.warn("Falha ao salvar jogadores por time:", err);
+      }
+    });
+
+    function normalizeGuests() {
+      const unique = new Map();
+      guests.forEach((g) => {
+        const name = (g.name || "Convidado").trim();
+        const position = (g.position || "Outros").trim();
+        const strength = Math.max(40, Math.min(100, parseInt(g.strength || "60", 10) || 60));
+        const key = name.toLowerCase();
+        // Se repetir nome, mantém a entrada mais recente
+        unique.set(key, { name, position, strength });
+      });
+      guests.length = 0;
+      unique.forEach((g) => guests.push(g));
+    }
+
+    function syncGuestsField() {
+      normalizeGuests();
+      const lines = guests.map((g) => `${g.name};${g.position};${g.strength}`);
+      guestsField.value = lines.join("\n");
+      try {
+        localStorage.setItem(guestsStorageKey, guestsField.value);
+      } catch (err) {
+        console.warn("Não foi possível salvar convidados no storage.", err);
+      }
+      guestList.innerHTML = guests
+        .map(
+          (g, idx) => `
+            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/5 border border-horriver-border text-horriver-light">
+              ${g.name} (Convidado) - ${g.position} - ${g.strength}
+              <button type="button" data-remove="${idx}" class="text-horriver-orange hover:text-white">x</button>
+            </span>
+          `
+        )
+        .join("");
+    }
+
+    function loadGuestsFromStorage() {
+      let raw = "";
+      try {
+        raw = localStorage.getItem(guestsStorageKey) || "";
+      } catch (err) {
+        console.warn("Não foi possível ler convidados do storage.", err);
+      }
+      if (!raw) return;
+      raw
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .forEach((line) => {
+          const [name, position, strengthRaw] = line.split(";");
+          const strength = Math.max(40, Math.min(100, parseInt(strengthRaw || "60", 10) || 60));
+          guests.push({
+            name: (name || "Convidado").trim(),
+            position: (position || "Outros").trim(),
+            strength,
+          });
+        });
+      syncGuestsField();
+    }
+
+    guestList.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-remove]");
+      if (!btn) return;
+      const idx = parseInt(btn.dataset.remove, 10);
+      if (!Number.isNaN(idx)) {
+        guests.splice(idx, 1);
+        syncGuestsField();
+      }
+    });
+
+    addGuestBtn?.addEventListener("click", () => {
+      const name = (guestName.value || "Convidado").trim();
+      const position = guestPos.value || "Outros";
+      const strength = Math.max(40, Math.min(100, parseInt(guestStr.value || "60", 10) || 60));
+      const key = name.toLowerCase();
+      const existingIdx = guests.findIndex((g) => (g.name || "").trim().toLowerCase() === key);
+      if (existingIdx >= 0) {
+        guests[existingIdx] = { name, position, strength };
+      } else {
+        guests.push({ name, position, strength });
+      }
+      guestName.value = "";
+      guestStr.value = "60";
+      syncGuestsField();
+      updateAvailableList();
+    });
+    loadGuestsFromStorage();
+
+    const teamColors = [
+      { name: "Amarelo", value: "#facc15" },
+      { name: "Azul", value: "#3b82f6" },
+      { name: "Preto", value: "#18181b" },
+      { name: "Vermelho", value: "#ef4444" },
+      { name: "Branco", value: "#e5e7eb" },
+    ];
+    const teamLabelPrefix = <%- JSON.stringify((typeof brand !== "undefined" && brand.teamPrefix) ? brand.teamPrefix : "Time") %>;
+    const sponsorNameByLabel = {
+      Amarelo: `${teamLabelPrefix} 1`,
+      Vermelho: `${teamLabelPrefix} 2`,
+      Azul: `${teamLabelPrefix} 3`,
+      Preto: `${teamLabelPrefix} 4`,
+    };
+
+    function renderTeams(teams, bench) {
+      const overallByPresentPlayerId = new Map(
+        getPresentPlayersDetail().map((p) => [String(p.id), Number(p.strength || 0)])
+      );
+      const resolveDisplayOverall = (player) => {
+        const presentOverall = overallByPresentPlayerId.get(String(player?.id || ""));
+        if (Number.isFinite(presentOverall) && presentOverall > 0) {
+          return Math.round(presentOverall);
+        }
+        const fallback = Number(player?.displayOverall ?? player?.strength ?? 0);
+        return Number.isFinite(fallback) ? Math.round(fallback) : 0;
+      };
+
+      const abbrevPos = (pos) => {
+        const p = String(pos || "").toLowerCase();
+        if (!p) return "";
+        if (p.includes("goleiro") || p.includes("gol")) return "GOL";
+        if (p.includes("ata")) return "ATA";
+        if (p.includes("atac")) return "ATA";
+        if (p.includes("meia") || p.includes("mei")) return "MEI";
+        if (p.includes("vol")) return "VOL";
+        if (p.includes("zag") || p.includes("def")) return "ZAG";
+        return p.slice(0, 3).toUpperCase();
+      };
+
+      if (resultsEl) {
+        if (teams && teams.length === 4) {
+          resultsEl.classList.add("teams-4");
+        } else {
+          resultsEl.classList.remove("teams-4");
+        }
+      }
+      const goalkeepers = (bench || []).filter((p) => {
+        const pos = (p.position || "").toLowerCase();
+        return pos.includes("goleiro") || pos.includes("gol");
+      });
+      const fieldBench = (bench || []).filter((p) => {
+        const pos = (p.position || "").toLowerCase();
+        return !(pos.includes("goleiro") || pos.includes("gol"));
+      });
+
+      resultsEl.innerHTML = (teams || [])
+        .map((t, idx) => {
+          const players = Array.isArray(t.players) ? t.players : [];
+          const power = players.reduce((sum, p) => sum + Number(p.strength || 0), 0);
+          const selectedColor = t.colorName || teamColors[idx % teamColors.length].name;
+          const selectedDef = teamColors.find((c) => c.name === selectedColor) || teamColors[0];
+          const sponsorName = t.name || sponsorNameByLabel[selectedDef.name] || `${teamLabelPrefix} ${idx + 1}`;
+          return `
+            <div class="border border-horriver-border/60 rounded-xl p-3 bg-black/30" data-team="${idx}" data-team-id="${idx}" data-team-color="${selectedDef.value}" data-team-color-name="${selectedDef.name}">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full" data-color-indicator style="background:${selectedDef.value}"></span>
+                  <span data-team-name>${sponsorName}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <select data-color-select class="bg-horriver-dark border border-horriver-border rounded px-2 py-1 text-[11px] text-horriver-light">
+                    ${teamColors
+                      .map(
+                        (c) => `<option value="${c.value}" ${c.name === selectedColor ? "selected" : ""}>${c.name}</option>`
+                      )
+                      .join("")}
+                  </select>
+                  <p class="text-horriver-light" data-team-power>Forca: ${Math.round(power)}</p>
+                </div>
+              </div>
+              <ul class="space-y-1" data-team-list data-list-id="team-${idx}">
+                ${players
+                  .map(
+                    (p) => {
+                      const displayPos = p.guest ? abbrevPos(p.position) : (p.position || "");
+                      return `
+                      <li
+                        class="flex items-center justify-between gap-1 bg-white/5 rounded-lg px-2 py-1 text-horriver-light text-[12px]"
+                        data-player-id="${p.id}"
+                        data-player-strength="${p.strength}"
+                        data-player-overall="${resolveDisplayOverall(p)}"
+                        data-player-position="${p.position}"
+                        data-player-name="${p.name}"
+                        data-player-nickname="${p.nickname || ""}"
+                        data-player-guest="${p.guest ? "true" : "false"}"
+                      >
+                        ${renderPlayerIdentity(p, displayPos)}
+                        <span class="text-horriver-gray">${resolveDisplayOverall(p)}</span>
+                      </li>
+                    `;
+                    }
+                  )
+                  .join("")}
+              </ul>
+            </div>
+          `;
+        })
+        .join("");
+
+      // aplica cor escolhida no nome/indicador e habilita troca
+      resultsEl.querySelectorAll("[data-team]").forEach((teamEl) => {
+        const select = teamEl.querySelector("[data-color-select]");
+        const indicator = teamEl.querySelector("[data-color-indicator]");
+        const nameEl = teamEl.querySelector("[data-team-name]");
+        if (!select) return;
+        const applyColor = () => {
+          if (indicator) indicator.style.background = select.value;
+          if (nameEl) nameEl.style.color = select.value;
+          teamEl.setAttribute("data-team-color", select.value);
+          const selectedText = select.options[select.selectedIndex]?.text || "";
+          if (selectedText) {
+            teamEl.setAttribute("data-team-color-name", selectedText);
+            const sponsorName = sponsorNameByLabel[selectedText] || `${teamLabelPrefix} ${Number(teamEl.dataset.team || 0) + 1}`;
+            if (nameEl) nameEl.textContent = sponsorName;
+          }
+        };
+        select.addEventListener("change", applyColor);
+        applyColor();
+      });
+
+      const renderBenchList = (players, listId) =>
+        players
+          .map((p) => {
+            const displayPos = p.guest ? abbrevPos(p.position) : (p.position || "");
+            return `
+              <li
+                class="flex items-center justify-between bg-white/5 rounded-lg px-2 py-1 text-horriver-light text-[12px]"
+                data-player-id="${p.id}"
+                data-player-strength="${p.strength}"
+                data-player-overall="${resolveDisplayOverall(p)}"
+                data-player-position="${p.position}"
+                data-player-name="${p.name}"
+                data-player-nickname="${p.nickname || ""}"
+                data-player-guest="${p.guest ? "true" : "false"}"
+                data-list-id="${listId}"
+              >
+                ${renderPlayerIdentity(p, displayPos)}
+                <span class="text-horriver-gray">${resolveDisplayOverall(p)}</span>
+              </li>
+            `;
+          })
+          .join("");
+
+      if (goalkeeperBenchBox) {
+        if (goalkeepers.length) {
+          goalkeeperBenchBox.classList.remove("hidden");
+          goalkeeperBenchBox.innerHTML = `
+            <div class="flex items-center justify-between mb-2">
+              <div>
+                <p class="text-horriver-orange font-semibold">Goleiros</p>
+                <p class="text-horriver-gray text-[11px]">Arraste para um time se quiser.</p>
+              </div>
+              <p class="text-horriver-light">${goalkeepers.length} jogador(es)</p>
+            </div>
+            <ul class="space-y-1 min-h-[12px]" data-list-id="goalkeeper-bench">
+              ${renderBenchList(goalkeepers, "goalkeeper-bench")}
+            </ul>
+          `;
+        } else {
+          goalkeeperBenchBox.classList.add("hidden");
+          goalkeeperBenchBox.innerHTML = "";
+        }
+      }
+
+      // Banco somente para goleiros; esconde reservas de linha
+      if (benchBox) {
+        benchBox.classList.add("hidden");
+        benchBox.innerHTML = "";
+      }
+      updateAvailableList();
+      recalculatePower();
+      setupDragAndDrop();
+      updateImportFormVisibility(teams);
+    }
+
+    function normalizeTeamLabel(value) {
+      const raw = value ? String(value).trim().toLowerCase() : "";
+      if (raw.includes("preto")) return "Preto";
+      if (raw.includes("vermelho")) return "Vermelho";
+      if (raw.includes("azul")) return "Azul";
+      if (raw.includes("amarelo")) return "Amarelo";
+      return "Preto";
+    }
+
+    function updateImportFormVisibility(teams = []) {
+      if (!importForm) return;
+      const hasTeams = Array.isArray(teams) && teams.length === 4;
+      if (hasTeams) {
+        importForm.classList.remove("hidden");
+      } else {
+        importForm.classList.add("hidden");
+      }
+    }
+
+    function fillImportInputs() {
+      if (!resultsEl) return false;
+      const requiredLabels = ["preto", "vermelho", "azul", "amarelo"];
+      const allSelects = Array.from(resultsEl.querySelectorAll("select"));
+      const colorSelects = allSelects.filter((select) => {
+        const optionLabels = Array.from(select.options).map((opt) =>
+          (opt.text || "").toLowerCase()
+        );
+        return requiredLabels.every((label) =>
+          optionLabels.some((optLabel) => optLabel.includes(label))
+        );
+      });
+      if (colorSelects.length === 4) {
+        colorSelects.forEach((select, idx) => {
+          const rawValue = select.value || "";
+          const selectedText = select.options[select.selectedIndex]?.text || "";
+          const normalized = normalizeTeamLabel(selectedText || rawValue);
+          const nameInput = importNameInputs[idx];
+          const colorInput = importColorInputs[idx];
+        if (nameInput) nameInput.value = sponsorNameByLabel[normalized] || `${teamLabelPrefix} ${idx + 1}`;
+          if (colorInput) colorInput.value = normalized;
+        });
+      } else if (initialLineup && Array.isArray(initialLineup.teams) && initialLineup.teams.length === 4) {
+        initialLineup.teams.forEach((team, idx) => {
+          const raw = team?.colorName || team?.colorValue || "";
+          const normalized = normalizeTeamLabel(raw);
+          const nameInput = importNameInputs[idx];
+          const colorInput = importColorInputs[idx];
+          if (nameInput) nameInput.value = sponsorNameByLabel[normalized] || `${teamLabelPrefix} ${idx + 1}`;
+          if (colorInput) colorInput.value = normalized;
+        });
+      } else {
+        if (importStatus) importStatus.textContent = "Gere 4 times antes de importar.";
+        return false;
+      }
+
+      if (importStatus) importStatus.textContent = "";
+      return true;
+    }
+
+    function recalculatePower() {
+      const teamBoxes = resultsEl.querySelectorAll("[data-team]");
+      teamBoxes.forEach((box) => {
+        const players = box.querySelectorAll("li[data-player-strength]");
+        const total = Array.from(players).reduce((sum, li) => sum + parseFloat(li.dataset.playerStrength || "0"), 0);
+        const powerEl = box.querySelector("[data-team-power]");
+        if (powerEl) powerEl.textContent = `Forca: ${Math.round(total)}`;
+      });
+
+      if (goalkeeperBenchBox) {
+        const gkCount = goalkeeperBenchBox.querySelectorAll("li[data-player-id]").length;
+        const gkCountEl = goalkeeperBenchBox.querySelector(".text-horriver-light");
+        if (gkCountEl) gkCountEl.textContent = `${gkCount} jogador(es)`;
+      }
+
+      if (benchBox) {
+        const benchCount = benchBox.querySelectorAll("li[data-player-id]").length;
+        const benchCountEl = benchBox.querySelector(".text-horriver-light");
+        if (benchCountEl) benchCountEl.textContent = `${benchCount} jogador(es)`;
+      }
+    }
+
+    function updateAvailableList() {
+      if (!availableBox) return;
+      if (!resultsEl.querySelector("[data-team]")) {
+        availableBox.classList.add("hidden");
+        availableBox.innerHTML = "";
+        return;
+      }
+
+      const assignedIds = new Set(
+        Array.from(
+          document.querySelectorAll(
+            "#sorterResults li[data-player-id], #goalkeeperBenchBox li[data-player-id]"
+          )
+        ).map((li) => li.dataset.playerId)
+      );
+
+      const available = getPresentPlayersDetail()
+        .filter((p) => !assignedIds.has(p.id))
+        .filter((p) => !isGoalkeeperPosition(p.position));
+
+      if (!available.length) {
+        availableBox.classList.add("hidden");
+        availableBox.innerHTML = "";
+        return;
+      }
+
+      availableBox.classList.remove("hidden");
+      availableBox.innerHTML = `
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <p class="text-horriver-orange font-semibold">Disponiveis</p>
+            <p class="text-horriver-gray text-[11px]">Arraste para trocar sem refazer o sorteio.</p>
+          </div>
+          <p class="text-horriver-light">${available.length} jogador(es)</p>
+        </div>
+        <ul class="space-y-1 min-h-[12px]" data-list-id="available">
+          ${available
+            .map(
+              (p) => `
+                <li
+                  class="flex items-center justify-between bg-white/5 rounded-lg px-2 py-1 text-horriver-light text-[12px]"
+                  data-player-id="${p.id}"
+                  data-player-strength="${p.strength || 0}"
+                  data-player-overall="${p.strength || 0}"
+                  data-player-position="${p.position || ""}"
+                  data-player-name="${p.name}"
+                  data-player-nickname="${p.nickname || ""}"
+                  data-player-guest="false"
+                  data-list-id="available"
+                >
+                  ${renderPlayerIdentity(p, p.position || "")}
+                  <span class="text-horriver-gray">${Number(p.strength || 0).toFixed(1)}</span>
+                </li>
+              `
+            )
+            .join("")}
+        </ul>
+      `;
+    }
+
+    function setupDragAndDrop() {
+      const placeholder = document.createElement("li");
+      placeholder.className = "drop-placeholder";
+      const draggableItems = document.querySelectorAll(
+        "#sorterResults li[data-player-id], #benchBox li[data-player-id], #goalkeeperBenchBox li[data-player-id], #availableBox li[data-player-id]"
+      );
+      const lists = document.querySelectorAll("[data-team-list],[data-list-id]");
+      let currentDragEl = null;
+
+      draggableItems.forEach((li) => {
+        li.setAttribute("draggable", "true");
+        li.addEventListener("dragstart", (e) => {
+          currentDragEl = li;
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", "moving");
+          li.classList.add("dragging");
+        });
+        li.addEventListener("dragend", () => {
+          li.classList.remove("dragging");
+          if (placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
+          lists.forEach((list) => list.classList.remove("drop-target"));
+          currentDragEl = null;
+        });
+      });
+
+      lists.forEach((list) => {
+        list.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+          if (currentDragEl) {
+            list.classList.add("drop-target");
+            if (placeholder.parentNode !== list) {
+              if (placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
+              list.appendChild(placeholder);
+            }
+          }
+        });
+        list.addEventListener("drop", (e) => {
+          e.preventDefault();
+          if (!currentDragEl) return;
+          list.classList.remove("drop-target");
+          if (placeholder.parentNode === list) {
+            list.insertBefore(currentDragEl, placeholder);
+            placeholder.parentNode.removeChild(placeholder);
+          } else {
+            list.appendChild(currentDragEl);
+          }
+          currentDragEl = null;
+          recalculatePower();
+          updateAvailableList();
+        });
+        list.addEventListener("dragleave", () => {
+          list.classList.remove("drop-target");
+          if (placeholder.parentNode === list) {
+            placeholder.parentNode.removeChild(placeholder);
+          }
+        });
+      });
+    }
+
+    function buildLineupPayload() {
+      const teams = Array.from(resultsEl.querySelectorAll("[data-team]"))
+        .map((teamEl, idx) => {
+          const colorSelect = teamEl.querySelector("[data-color-select]");
+          const colorName =
+            colorSelect?.options[colorSelect.selectedIndex]?.text || null;
+          const colorValue = colorSelect?.value || null;
+          const players = Array.from(teamEl.querySelectorAll("li[data-player-id]"))
+            .map((li) => ({
+              id: li.dataset.playerId,
+              name: li.dataset.playerName || li.querySelector("span")?.textContent || "Jogador",
+              nickname: li.dataset.playerNickname || null,
+              position: li.dataset.playerPosition || "",
+              strength: Number(li.dataset.playerStrength || 0),
+              displayOverall: li.dataset.playerOverall ? Number(li.dataset.playerOverall) : null,
+              guest: li.dataset.playerGuest === "true",
+            }));
+          const power = players.reduce((sum, p) => sum + (p.strength || 0), 0);
+          const colorLabel = teamEl.getAttribute("data-team-color-name") || "";
+          const fallbackName = sponsorNameByLabel[colorLabel] || `${teamLabelPrefix} ${idx + 1}`;
+          return {
+            name: teamEl.querySelector("[data-team-name]")?.textContent?.trim() || fallbackName ,
+            colorName,
+            colorValue,
+            power,
+            players,
+          };
+        });
+
+      const benchPlayers = [
+        ...Array.from(goalkeeperBenchBox?.querySelectorAll("li[data-player-id]") || []).map((li) => ({
+          id: li.dataset.playerId,
+          name: li.dataset.playerName || li.querySelector("span")?.textContent || "Jogador",
+          nickname: li.dataset.playerNickname || null,
+          position: li.dataset.playerPosition || "",
+          strength: Number(li.dataset.playerStrength || 0),
+          displayOverall: li.dataset.playerOverall ? Number(li.dataset.playerOverall) : null,
+          guest: li.dataset.playerGuest === "true",
+        })),
+        ...Array.from(benchBox?.querySelectorAll("li[data-player-id]") || []).map((li) => ({
+          id: li.dataset.playerId,
+          name: li.dataset.playerName || li.querySelector("span")?.textContent || "Jogador",
+          nickname: li.dataset.playerNickname || null,
+          position: li.dataset.playerPosition || "",
+          strength: Number(li.dataset.playerStrength || 0),
+          displayOverall: li.dataset.playerOverall ? Number(li.dataset.playerOverall) : null,
+          guest: li.dataset.playerGuest === "true",
+        })),
+      ];
+
+      return { teams, bench: benchPlayers };
+    }
+
+    async function persistLineup(source = "manual") {
+      const payload = buildLineupPayload();
+      if (!payload.teams.length) {
+        if (shareStatus) shareStatus.textContent = "Sorteie os times antes de salvar.";
+        return;
+      }
+
+      try {
+        const headers = { "Content-Type": "application/json" };
+        if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
+        const resp = await fetch(`/admin/matches/${matchId}/save-lineup`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ ...payload, source }),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok || data.error) throw new Error(data.error || "Erro ao salvar lineup.");
+        if (shareStatus) shareStatus.textContent = "Times salvos para esta pelada.";
+      } catch (err) {
+        console.error(err);
+        if (shareStatus) shareStatus.textContent = "Falha ao salvar os times.";
+      }
+    }
+
+    if (initialLineup && Array.isArray(initialLineup.teams) && initialLineup.teams.length) {
+      renderTeams(initialLineup.teams || [], initialLineup.bench || []);
+      if (shareBox) shareBox.classList.remove("hidden");
+      statusEl.textContent = "Times salvos carregados.";
+    }
+
+    async function handleSort(e) {
+      if (e) e.preventDefault();
+      statusEl.textContent = "Sorteando...";
+      resultsEl.innerHTML = "";
+      benchBox.classList.add("hidden");
+      benchBox.innerHTML = "";
+      if (goalkeeperBenchBox) {
+        goalkeeperBenchBox.classList.add("hidden");
+        goalkeeperBenchBox.innerHTML = "";
+      }
+      if (availableBox) {
+        availableBox.classList.add("hidden");
+        availableBox.innerHTML = "";
+      }
+
+      const presentIds = getPresentIdsFromForm();
+      if (!presentIds.length) {
+        statusEl.textContent = "Sorteando com os presentes já salvos (marque acima se quiser alterar).";
+      }
+
+      syncGuestsField();
+      const payload = {
+        guests: guestsField.value || "",
+        presentIds,
+        seedIds: Array.from(seedIds),
+        playersPerTeam: getPlayersPerTeam(),
+      };
+
+      try {
+        const headers = { "Content-Type": "application/json" };
+        if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
+        const resp = await fetch(`/admin/matches/${matchId}/sort-teams`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(payload),
+        });
+        const data = await resp.json();
+        if (!resp.ok || data.error) {
+          statusEl.textContent = data.error || "Erro ao sortear.";
+          return;
+        }
+
+        renderTeams(data.teams || [], data.bench || []);
+        statusEl.textContent = `Gerados ${data.teams?.length || 0} time(s) com ${getPlayersPerTeam()} jogador(es) por time. Ajuste e salve se precisar.`;
+        if (shareBox) shareBox.classList.remove("hidden");
+        await persistLineup("auto-sort");
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = "Erro inesperado ao sortear.";
+      }
+    }
+    form.addEventListener("submit", handleSort);
+    sortBtn?.addEventListener("click", handleSort);
+    saveBtn?.addEventListener("click", () => {
+      persistLineup("manual-save");
+    });
+    if (importForm) {
+      importForm.addEventListener("submit", (e) => {
+        if (!fillImportInputs()) {
+          e.preventDefault();
+        }
+      });
+    }
+
+    if (copyBtn) {
+      copyBtn.addEventListener("click", () => {
+        const blocks = resultsEl.querySelectorAll("[data-team]");
+        if (!blocks.length) return;
+        let text = `Sorteio da pelada ${matchDateLabel}\n`;
+        const abbrevPos = (pos) => {
+          const p = (pos || "").toLowerCase();
+          if (!p) return "";
+          if (p.includes("goleiro")) return "GOL";
+          if (p.includes("ata")) return "ATA";
+          if (p.includes("atac")) return "ATA";
+          if (p.includes("meia") || p.includes("mei")) return "MEI";
+          if (p.includes("vol")) return "VOL";
+          if (p.includes("zag") || p.includes("def")) return "ZAG";
+          return p.slice(0, 3).toUpperCase();
+        };
+
+        blocks.forEach((box, idx) => {
+          const colorName =
+            box.getAttribute("data-team-color-name") ||
+            box.querySelector("[data-color-select]")?.selectedOptions?.[0]?.text ||
+            "";
+          const rawName = box.querySelector("[data-team-name]")?.textContent || "Time";
+          const colorEmojiMap = {
+            Amarelo: "AMARELO",
+            Azul: "AZUL",
+            Preto: "PRETO",
+            Vermelho: "VERMELHO",
+            Branco: "BRANCO",
+          };
+          const emoji = colorEmojiMap[colorName] || "";
+          const sponsorName = sponsorNameByLabel[colorName] || `${teamLabelPrefix} ${idx + 1}`;
+          const name = colorName ? `${emoji} ${sponsorName}` : rawName;
+          const lines = Array.from(box.querySelectorAll("li")).map((li) => {
+            const spans = li.querySelectorAll("span");
+            const nome = spans[0]?.textContent?.trim() || "";
+            const isGuest = li.dataset.playerGuest === "true";
+            const pos = isGuest ? abbrevPos(spans[1]?.textContent?.trim() || "") : "";
+            return pos ? `- ${nome} ${pos}` : `- ${nome}`;
+          });
+          text += `\n${name}\n${lines.join("\n")}\n`;
+        });
+        const gkItems = goalkeeperBenchBox ? goalkeeperBenchBox.querySelectorAll("li") : [];
+        if (gkItems.length) {
+          text += "\nGoleiros\n";
+          gkItems.forEach((li) => {
+            const spans = li.querySelectorAll("span");
+            const nome = spans[0]?.textContent?.trim() || "";
+            text += `- ${nome}\n`;
+          });
+        }
+
+        const benchItems = benchBox.querySelectorAll("li");
+        if (benchItems.length) {
+          text += "\nBanco/Reservas\n";
+          benchItems.forEach((li) => {
+            const spans = li.querySelectorAll("span");
+            const nome = spans[0]?.textContent?.trim() || "";
+            const isGuest = li.dataset.playerGuest === "true";
+            const pos = isGuest ? abbrevPos(spans[1]?.textContent?.trim() || "") : "";
+            text += pos ? `- ${nome} ${pos}\n` : `- ${nome}\n`;
+          });
+        }
+        try {
+          navigator.clipboard.writeText(text);
+          if (shareStatus) shareStatus.textContent = "Times copiados para a área de transferência.";
+        } catch (err) {
+          if (shareStatus) shareStatus.textContent = "Falha ao copiar. Copie manualmente.";
+        }
+      });
+    }
+
+    if (imgBtn) {
+      const downloadBlob = (blob, filename) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      };
+
+      imgBtn.addEventListener("click", async () => {
+        const original = imgBtn.textContent;
+        imgBtn.textContent = "Gerando...";
+        imgBtn.disabled = true;
+        if (shareStatus) shareStatus.textContent = "Gerando imagem...";
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 45000);
+        try {
+          const normalizeColorLabel = (value) => {
+            const raw = value ? String(value).trim().toLowerCase() : "";
+            if (raw.includes("amarelo") || raw.includes("#facc15")) return "Amarelo";
+            if (raw.includes("vermelho") || raw.includes("#ef4444")) return "Vermelho";
+            if (raw.includes("azul") || raw.includes("#3b82f6")) return "Azul";
+            if (raw.includes("preto") || raw.includes("#18181b") || raw.includes("#111827")) return "Preto";
+            return null;
+          };
+
+          const sponsorNames = {
+            Amarelo: `${teamLabelPrefix} 1`,
+            Vermelho: `${teamLabelPrefix} 2`,
+            Azul: `${teamLabelPrefix} 3`,
+            Preto: `${teamLabelPrefix} 4`,
+          };
+
+          const readPlayer = (li) => ({
+            nome: li.dataset.playerName || "Jogador",
+            nickname: li.dataset.playerNickname || "",
+            pos: li.dataset.playerPosition || "",
+            isGuest: li.dataset.playerGuest === "true",
+          });
+
+          const teamsPayload = Array.from(resultsEl.querySelectorAll("[data-team]")).map((box, idx) => {
+            const rawName = box.querySelector("[data-team-name]")?.textContent?.trim() || `${teamLabelPrefix} ${idx + 1}`;
+            const selectEl = box.querySelector("[data-color-select]");
+            const colorValue = selectEl?.value || box.getAttribute("data-team-color") || "#f97316";
+            const nomeCor = box.getAttribute("data-team-color-name") || selectEl?.selectedOptions?.[0]?.text || rawName;
+            const colorName = normalizeColorLabel(nomeCor) || normalizeColorLabel(colorValue) || "Vermelho";
+            const name = sponsorNames[colorName] || rawName;
+            const players = Array.from(box.querySelectorAll("li")).map(readPlayer);
+            return { name, colorName, colorValue, players };
+          });
+
+          if (!teamsPayload.length) {
+            if (shareStatus) shareStatus.textContent = "Sorteie os times antes de gerar imagem.";
+            return;
+          }
+
+          const goalkeepersPayload = Array.from(goalkeeperBenchBox?.querySelectorAll("li") || []).map(readPlayer);
+
+          const headers = { "Content-Type": "application/json" };
+          if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
+
+          const res = await fetch("/share/lineup.jpg", {
+            method: "POST",
+            headers,
+            signal: controller.signal,
+            body: JSON.stringify({
+              teams: teamsPayload,
+              goalkeepers: goalkeepersPayload,
+              matchDate: matchDateLabel,
+              matchDescription: matchDescription,
+              format: "story",
+            }),
+          });
+
+          if (!res.ok) {
+            const message = await res.text().catch(() => "");
+            throw new Error(`Servidor retornou ${res.status}${message ? `: ${message}` : ""}`);
+          }
+
+          const blob = await res.blob();
+          if (!String(blob.type || "").includes("image/jpeg")) {
+            const message = await blob.text().catch(() => "");
+            throw new Error(message || `Resposta inesperada: ${blob.type || "sem tipo"}`);
+          }
+          if (!blob || !blob.size) throw new Error("Servidor retornou uma imagem vazia.");
+          downloadBlob(blob, "times-sorteio.jpg");
+
+          if (shareStatus) shareStatus.textContent = "Imagem baixada.";
+        } catch (err) {
+          console.error(err);
+          const message =
+            err?.name === "AbortError"
+              ? "O Render demorou demais para gerar a imagem. Tente novamente em alguns segundos."
+              : err?.message || "Erro ao gerar imagem.";
+          if (shareStatus) shareStatus.textContent = message;
+          alert(`Não foi possível gerar a imagem. Tente novamente.\n\n${message}`);
+        } finally {
+          clearTimeout(timeoutId);
+          imgBtn.textContent = original;
+          imgBtn.disabled = false;
+        }
+      });
+    }
+
+    console.info("Sorteador carregado");
+  } catch (err) {
+    console.error("Erro no script do sorteador", err);
+    if (statusEl) statusEl.textContent = "Erro no script. Veja o console.";
+  }
+  })();
+</script>

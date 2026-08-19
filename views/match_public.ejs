@@ -1,0 +1,960 @@
+<%
+  const fmtDate = (d) =>
+    d ? new Date(d).toLocaleDateString("pt-BR", { timeZone: 'America/Sao_Paulo' }) : "-";
+
+  const fmtRating = (val) => {
+    if (val === null || val === undefined || Number.isNaN(val)) return "—";
+    return Number(val).toFixed(2).replace(".", ",");
+  };
+
+  const safeStats = Array.isArray(stats) ? stats : [];
+  const showRatings = typeof ratingsReleased !== "undefined"
+    ? !!ratingsReleased
+    : match && match.votingStatus === "CLOSED";
+  const hasSaves = safeStats.some((s) => s.saves != null);
+  const statsColspan = (showRatings ? 8 : 7) + (hasSaves ? 1 : 0);
+  const totalGoals = safeStats.reduce((sum, s) => sum + (Number(s.goals) || 0), 0);
+  const totalAssists = safeStats.reduce((sum, s) => sum + (Number(s.assists) || 0), 0);
+  const totalPhotos = safeStats.reduce((sum, s) => sum + (s.appearedInPhoto ? 1 : 0), 0);
+  const playerName = (row) =>
+    row && row.player
+      ? `${row.player.name}${row.player.nickname ? ` (${row.player.nickname})` : ""}`
+      : "-";
+  const topScorer = [...safeStats].sort((a, b) =>
+    (b.goals || 0) - (a.goals || 0) ||
+    (b.assists || 0) - (a.assists || 0) ||
+    playerName(a).localeCompare(playerName(b))
+  )[0] || null;
+  const topAssistant = [...safeStats].sort((a, b) =>
+    (b.assists || 0) - (a.assists || 0) ||
+    (b.goals || 0) - (a.goals || 0) ||
+    playerName(a).localeCompare(playerName(b))
+  )[0] || null;
+  const topRated = showRatings
+    ? ([...safeStats]
+        .filter((s) => s.rating != null)
+        .sort((a, b) =>
+          Number(b.rating || 0) - Number(a.rating || 0) ||
+          (b.goals || 0) - (a.goals || 0) ||
+          (b.assists || 0) - (a.assists || 0)
+        )[0] || null)
+    : null;
+  const voteWinner = showRatings && typeof matchVoteWinner !== "undefined" && matchVoteWinner
+    ? matchVoteWinner
+    : null;
+  const summaryRated = voteWinner || topRated;
+  const votingOpen = !showRatings;
+%>
+
+<section class="space-y-6 animate-fadeIn">
+  <style>
+    .match-center-hero {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      border-radius: 1.5rem;
+      background:
+        radial-gradient(circle at top left, rgba(255, 122, 26, 0.18), transparent 38%),
+        radial-gradient(circle at bottom right, rgba(139, 19, 32, 0.22), transparent 42%),
+        linear-gradient(135deg, rgba(9, 9, 13, 0.98), rgba(5, 5, 9, 0.92));
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.34);
+    }
+    .match-center-kicker {
+      display: inline-flex;
+      width: fit-content;
+      border: 1px solid rgba(255, 122, 26, 0.28);
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 0.35rem 0.7rem;
+      color: #ffb685;
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .match-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+    @media (min-width: 768px) {
+      .match-summary-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
+    .match-summary-card {
+      min-width: 0;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 1rem;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.016)),
+        rgba(0, 0, 0, 0.28);
+      padding: 0.85rem;
+    }
+    .match-summary-card span {
+      display: block;
+      color: rgba(178, 184, 194, 0.82);
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .match-summary-card strong {
+      display: block;
+      margin-top: 0.35rem;
+      color: #fff7f2;
+      font-size: 1.45rem;
+      line-height: 1;
+    }
+    .match-summary-card small {
+      display: block;
+      margin-top: 0.35rem;
+      color: rgba(245, 245, 245, 0.72);
+      font-size: 0.72rem;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
+    }
+    .match-vote-note {
+      border: 1px solid rgba(255, 122, 26, 0.24);
+      border-radius: 1rem;
+      background: rgba(255, 122, 26, 0.08);
+      padding: 0.8rem 0.95rem;
+      color: rgba(245, 245, 245, 0.86);
+      font-size: 0.78rem;
+      line-height: 1.45;
+    }
+    @media (max-width: 640px) {
+      .match-stats-table {
+        min-width: 0 !important;
+        display: block;
+      }
+      .match-stats-table thead {
+        display: none;
+      }
+      .match-stats-table tbody {
+        display: grid;
+        gap: 0.65rem;
+        padding: 0.75rem;
+      }
+      .match-stats-table tr {
+        display: grid;
+        grid-template-columns: 2rem minmax(0, 1fr) auto;
+        gap: 0.55rem;
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        border-radius: 1rem;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.016)),
+          rgba(0, 0, 0, 0.28);
+        padding: 0.75rem;
+      }
+      .match-stats-table td {
+        position: static !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border: 0;
+      }
+      .match-stats-table td:nth-child(1) {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        border-radius: 999px;
+        background: rgba(255, 122, 26, 0.14) !important;
+        color: #fff7f2;
+        font-weight: 800;
+      }
+      .match-stats-table td:nth-child(2) {
+        min-width: 0;
+        white-space: normal;
+      }
+      .match-stats-table td:nth-child(3) {
+        justify-self: end;
+        align-self: start;
+        border: 1px solid rgba(255, 122, 26, 0.28);
+        border-radius: 999px;
+        background: rgba(255, 122, 26, 0.08) !important;
+        padding: 0.25rem 0.45rem !important;
+        line-height: 1;
+      }
+      .match-stats-table td:nth-child(n+4) {
+        display: inline-flex;
+        min-height: 2.8rem;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.18rem;
+        border-radius: 0.8rem;
+        background: rgba(255, 255, 255, 0.045) !important;
+        color: #f8fafc;
+        font-weight: 800;
+        text-align: center;
+      }
+      .match-stats-table td:nth-child(n+4)::before {
+        content: attr(data-label);
+        color: rgba(178, 184, 194, 0.82);
+        font-size: 0.56rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        line-height: 1;
+        text-transform: uppercase;
+      }
+    }
+  </style>
+
+  <!-- Cabeçalho da pelada -->
+  <header class="match-center-hero p-4 md:p-6 space-y-5">
+    <h1 class="font-title text-3xl md:text-4xl text-horriver-light">
+      Pelada em <span class="text-horriver-orange"><%= fmtDate(match.playedAt) %></span>
+    </h1>
+
+    <div class="text-sm text-horriver-gray space-y-1">
+      <p>
+        <span class="font-semibold text-horriver-light">Descrição:</span>
+        <%= match.description || "Sem descrição" %>
+      </p>
+      <p>
+        <span class="font-semibold text-horriver-light">Time vencedor:</span>
+        <%= match.winnerTeam || "Sem time vencedor" %>
+      </p>
+      <p class="text-[11px] text-horriver-gray/80 mt-1">
+        Esta página é apenas para visualização pública. Para lançar ou editar estatísticas,
+        use o painel do administrador.
+      </p>
+    </div>
+  </header>
+
+  <section class="match-center-hero p-4 md:p-5 space-y-4">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <div>
+        <span class="match-center-kicker">Resumo da pelada</span>
+        <h2 class="mt-3 font-title text-2xl text-horriver-light">Match Center</h2>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <span class="inline-flex rounded-full border border-horriver-border bg-black/35 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-horriver-gray">
+          <%= safeStats.length %> jogadores
+        </span>
+        <span class="inline-flex rounded-full border <%= votingOpen ? 'border-horriver-orange/50 bg-horriver-orange/10 text-horriver-orange' : 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300' %> px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em]">
+          <%= votingOpen ? "Votacao aberta" : "Votação encerrada" %>
+        </span>
+      </div>
+    </div>
+
+    <% if (!showRatings) { %>
+      <div class="match-vote-note">
+        As notas ficam ocultas enquanto a votação estiver aberta. Elas aparecem aqui automaticamente quando a votação for encerrada.
+      </div>
+    <% } %>
+
+    <div class="match-summary-grid">
+      <article class="match-summary-card">
+        <span>Gols na pelada</span>
+        <strong><%= totalGoals %></strong>
+        <small><%= totalAssists %> assistências registradas</small>
+      </article>
+      <article class="match-summary-card">
+        <span>Artilheiro</span>
+        <strong><%= topScorer ? (topScorer.goals || 0) : 0 %></strong>
+        <small><%= playerName(topScorer) %></small>
+      </article>
+      <article class="match-summary-card">
+        <span>Garcom</span>
+        <strong><%= topAssistant ? (topAssistant.assists || 0) : 0 %></strong>
+        <small><%= playerName(topAssistant) %></small>
+      </article>
+      <article class="match-summary-card">
+        <span><%= showRatings ? (voteWinner ? "Craque da votação" : "Melhor nota") : "Fotos" %></span>
+        <strong><%= showRatings && summaryRated ? fmtRating(summaryRated.rating) : totalPhotos %></strong>
+        <small><%= showRatings && summaryRated ? playerName(summaryRated) : "jogadores em registros" %></small>
+      </article>
+    </div>
+  </section>
+
+  <!-- Torneio (publico) -->
+  <%
+    const tournamentData = typeof tournament !== "undefined" ? tournament : null;
+    const standings = Array.isArray(tournamentStandings) ? tournamentStandings : [];
+    const games = tournamentData && Array.isArray(tournamentData.games) ? tournamentData.games : [];
+    const tournamentTeamList = Array.isArray(tournamentTeams) ? tournamentTeams : [];
+    const stages = ["GROUP", "SEMI", "FINAL"];
+    const stageLabels = {
+      GROUP: "Fase de grupos",
+      SEMI: "Semifinais",
+      FINAL: "Final",
+    };
+    const teamLabelPrefix = (typeof brand !== "undefined" && brand.teamPrefix) ? brand.teamPrefix : "Time";
+    const sponsorNameByLabel = {
+      Amarelo: `${teamLabelPrefix} 1`,
+      Vermelho: `${teamLabelPrefix} 2`,
+      Azul: `${teamLabelPrefix} 3`,
+      Preto: `${teamLabelPrefix} 4`,
+    };
+    const sponsorStyleByLabel = {
+      Amarelo: "color: #facc15;",
+      Vermelho: "color: #ef4444;",
+      Azul: "color: #3b82f6;",
+      Preto: "color: #6b7280;",
+    };
+    const escapeHtml = (value) => {
+      const text = value == null ? "" : String(value);
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    };
+    const normalizeSponsorLabel = (value) => {
+      const raw = value ? String(value).trim().toLowerCase() : "";
+      if (raw.includes("amarelo")) return "Amarelo";
+      if (raw.includes("vermelho")) return "Vermelho";
+      if (raw.includes("azul")) return "Azul";
+      if (raw.includes("preto")) return "Preto";
+      if (raw.includes("#facc15")) return "Amarelo";
+      if (raw.includes("#ef4444")) return "Vermelho";
+      if (raw.includes("#3b82f6")) return "Azul";
+      if (raw.includes("#18181b") || raw.includes("#111827")) return "Preto";
+      return null;
+    };
+    const sortByRoundOrId = (a, b) => {
+      const ar = a.round != null ? a.round : 999;
+      const br = b.round != null ? b.round : 999;
+      if (ar !== br) return ar - br;
+      return (a.id || 0) - (b.id || 0);
+    };
+    const gamesByStage = stages.reduce((acc, stage) => {
+      acc[stage] = games.filter((g) => g.stage === stage).sort(sortByRoundOrId);
+      return acc;
+    }, {});
+    const teamById = new Map(tournamentTeamList.map((team) => [team.id, team]));
+    const formatTeamName = (team) => {
+      if (!team) return "Time";
+      const label = normalizeSponsorLabel(team.color || team.name);
+      return sponsorNameByLabel[label] || team.name || "Time";
+    };
+    const renderTeamName = (team, fallbackName) => {
+      if (!team) return fallbackName || "Time";
+      const label = normalizeSponsorLabel(team.color || team.name);
+      const name = sponsorNameByLabel[label] || team.name || fallbackName || "Time";
+      const style = sponsorStyleByLabel[label] || "";
+      return `<span style="${style}">${escapeHtml(name)}</span>`;
+    };
+    const teamNameFromRow = (row) => {
+      const team = teamById.get(row.teamId);
+      if (team) return formatTeamName(team);
+      const label = normalizeSponsorLabel(row.name);
+      return sponsorNameByLabel[label] || row.name || "Time";
+    };
+    const statVal = (row, primary, fallback) => {
+      if (row && row[primary] != null) return row[primary];
+      if (fallback && row && row[fallback] != null) return row[fallback];
+      return 0;
+    };
+  %>
+
+  <% if (!tournamentData) { %>
+    <p class="text-xs text-horriver-gray">
+      Sem torneio nesta pelada.
+    </p>
+  <% } else { %>
+    <style>
+      .tournament-export {
+        background: linear-gradient(180deg, #0f1115 0%, #050608 100%);
+        border: 1px solid rgba(255, 122, 26, 0.2);
+        border-radius: 24px;
+        padding: 28px 32px;
+        color: #f1f5f9;
+      }
+      .tournament-export .export-only {
+        display: none;
+      }
+      .tournament-export.is-exporting {
+        width: 1600px;
+        max-width: 1600px;
+      }
+      body.is-exporting .tournament-export .export-only {
+        display: flex;
+      }
+      body.is-exporting .tournament-export .no-export {
+        display: none !important;
+      }
+      body.is-exporting {
+        height: auto !important;
+      }
+      body.is-exporting .tournament-export {
+        overflow: visible !important;
+        height: auto !important;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+      }
+      body.is-exporting .tournament-export .export-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        margin-bottom: 16px;
+      }
+      body.is-exporting .tournament-export .export-title {
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      body.is-exporting .tournament-export .export-subtitle {
+        font-size: 14px;
+        color: rgba(148, 163, 184, 0.9);
+        margin-top: 4px;
+      }
+      body.is-exporting .tournament-export .export-logo {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 122, 26, 0.6);
+        background: #0b0c0f;
+        display: grid;
+        place-items: center;
+      }
+      body.is-exporting .tournament-export .export-logo img {
+        width: 34px;
+        height: 34px;
+        object-fit: contain;
+      }
+      body.is-exporting .tournament-export .export-footer {
+        margin-top: 20px;
+        font-size: 14px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        text-align: center;
+        color: rgba(255, 255, 255, 0.35);
+      }
+      body.is-exporting .tournament-export .export-card {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 18px;
+      }
+      body.is-exporting .tournament-export .export-card h3 {
+        font-size: 18px;
+      }
+      body.is-exporting .tournament-export table th,
+      body.is-exporting .tournament-export table td {
+        font-size: 14px;
+      }
+      body.is-exporting .tournament-export .game-card {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        padding: 14px 16px;
+      }
+      body.is-exporting .tournament-export .score {
+        font-size: 18px;
+        font-weight: 700;
+        color: #ff7a1a;
+      }
+      /* --- Bracket --- */
+      .trn-bracket { overflow-x: auto; padding-bottom: 4px; }
+      .trn-col-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: rgba(178,184,194,0.5); margin-bottom: 10px; }
+      .trn-round-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: rgba(178,184,194,0.5); }
+      .trn-bracket-inner { display: flex; align-items: stretch; gap: 0; min-width: max-content; }
+      .trn-col { display: flex; flex-direction: column; }
+      .trn-games-col { display: flex; flex-direction: column; gap: 20px; }
+      .trn-col--final { align-self: center; }
+      .trn-game-card { border: 1px solid rgba(148,163,184,0.2); border-radius: 12px; overflow: hidden; background: rgba(0,0,0,0.35); width: 260px; }
+      .trn-game-card--final { border-color: rgba(255,122,26,0.45); background: rgba(255,122,26,0.04); width: 280px; }
+      .trn-team { display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; gap: 10px; }
+      .trn-team + .trn-team { border-top: 1px solid rgba(148,163,184,0.1); }
+      .trn-team--winner { background: rgba(255,122,26,0.08); }
+      .trn-team-name { font-size: 12px; color: rgba(178,184,194,0.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 190px; }
+      .trn-team--winner .trn-team-name { color: #f5f5f5; font-weight: 600; }
+      .trn-score { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: rgba(148,163,184,0.45); min-width: 24px; text-align: right; line-height: 1; }
+      .trn-team--winner .trn-score { color: #ff7a1a; }
+      .trn-score-pending { font-size: 14px; color: rgba(148,163,184,0.3); }
+      .trn-penalty-note { padding: 4px 14px 7px; font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(148,163,184,0.4); }
+      .trn-bracket-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: rgba(178,184,194,0.5); margin-bottom: 10px; white-space: nowrap; }
+      .trn-connector { display: flex; flex-direction: column; align-self: stretch; width: 28px; flex-shrink: 0; }
+      .trn-connector-top { flex: 1; border-right: 1.5px solid rgba(255,122,26,0.3); border-bottom: 1.5px solid rgba(255,122,26,0.3); border-bottom-right-radius: 3px; }
+      .trn-connector-bottom { flex: 1; border-right: 1.5px solid rgba(255,122,26,0.3); border-top: 1.5px solid rgba(255,122,26,0.3); border-top-right-radius: 3px; }
+      .trn-connector-solo { align-self: center; width: 100%; height: 1.5px; background: rgba(255,122,26,0.3); }
+      .trn-champion-tag { display: inline-flex; align-items: center; gap: 4px; margin-bottom: 8px; padding: 3px 8px; border-radius: 999px; background: rgba(255,122,26,0.12); border: 1px solid rgba(255,122,26,0.35); font-size: 10px; color: #ff7a1a; text-transform: uppercase; letter-spacing: 0.1em; }
+    </style>
+    <section class="space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="font-title text-xl text-horriver-light">Torneio</h2>
+          <p class="text-[11px] text-horriver-gray">
+            Classificação e jogos do torneio.
+          </p>
+        </div>
+        <div class="no-export flex items-center gap-2">
+          <button
+            type="button"
+            class="px-3 py-1.5 rounded-full border border-horriver-border text-[11px] text-horriver-gray hover:border-horriver-orange hover:text-horriver-orange transition"
+            data-export-target="tournament-standings-export"
+            data-export-name="tournament-classificacao"
+          >
+            Exportar classificação
+          </button>
+          <button
+            type="button"
+            class="px-3 py-1.5 rounded-full border border-horriver-border text-[11px] text-horriver-gray hover:border-horriver-orange hover:text-horriver-orange transition"
+            data-export-target="tournament-games-export"
+            data-export-name="tournament-jogos"
+          >
+            Exportar jogos
+          </button>
+        </div>
+      </div>
+
+      <%
+        var semiGames = gamesByStage['SEMI'] || [];
+        var finalGames = gamesByStage['FINAL'] || [];
+        var hasKnockout = semiGames.length > 0 || finalGames.length > 0;
+      %>
+      <% if (hasKnockout) { %>
+      <%
+        var fGame = finalGames.length > 0 ? finalGames[0] : null;
+        var fHome = fGame ? teamById.get(fGame.homeTeamId) : null;
+        var fAway = fGame ? teamById.get(fGame.awayTeamId) : null;
+        var fHomeWin = fGame && fGame.winnerTeamId != null && fGame.winnerTeamId === fGame.homeTeamId;
+        var fAwayWin = fGame && fGame.winnerTeamId != null && fGame.winnerTeamId === fGame.awayTeamId;
+        var fHasScore = fGame && fGame.homeGoals != null && fGame.awayGoals != null;
+        var champion = fGame && fGame.winnerTeamId ? teamById.get(fGame.winnerTeamId) : null;
+        var connColor = 'rgba(255,122,26,0.32)';
+      %>
+      <div class="rounded-2xl border border-horriver-border/50 bg-black/25 p-4 overflow-x-auto">
+        <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-horriver-gray/50 mb-4">Chave do Torneio</p>
+        <table style="border-collapse:collapse;border-spacing:0;table-layout:fixed;">
+          <tbody>
+            <% if (semiGames.length >= 2) { %>
+            <tr>
+              <td style="vertical-align:top;padding-bottom:10px;width:260px;">
+                <div class="trn-bracket-label">Semifinais</div>
+                <% var g0 = semiGames[0]; var h0=teamById.get(g0.homeTeamId); var a0=teamById.get(g0.awayTeamId); var hw0=g0.winnerTeamId!=null&&g0.winnerTeamId===g0.homeTeamId; var aw0=g0.winnerTeamId!=null&&g0.winnerTeamId===g0.awayTeamId; var hs0=g0.homeGoals!=null&&g0.awayGoals!=null; %>
+                <div class="trn-game-card">
+                  <div class="trn-team <%= hw0?'trn-team--winner':'' %>"><span class="trn-team-name"><%- renderTeamName(h0,'Time') %></span><span class="trn-score"><%= hs0?g0.homeGoals:'–' %></span></div>
+                  <div class="trn-team <%= aw0?'trn-team--winner':'' %>"><span class="trn-team-name"><%- renderTeamName(a0,'Time') %></span><span class="trn-score"><%= hs0?g0.awayGoals:'–' %></span></div>
+                  <% if (g0.decidedBy==='PENALTIES'&&g0.homePenalties!=null) { %><div class="trn-penalty-note">Pênaltis: <%= g0.homePenalties %>–<%= g0.awayPenalties %></div><% } %>
+                </div>
+              </td>
+              <td style="border-right:1.5px solid <%= connColor %>;border-bottom:1.5px solid <%= connColor %>;width:32px;"></td>
+              <% if (fGame) { %>
+              <td rowspan="3" style="vertical-align:middle;padding-left:0;width:280px;">
+                <div class="trn-bracket-label">Final</div>
+                <% if (champion) { %><div class="trn-champion-tag"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3h14l2 5c0 3.866-3.134 7-7 7H10C6.134 15 3 11.866 3 8L5 3zm7 13c2.21 0 4-1.79 4-4H8c0 2.21 1.79 4 4 4zm-3 2h6l1 3H8l1-3z"/></svg><%- renderTeamName(champion,'Campeão') %></div><% } %>
+                <div class="trn-game-card trn-game-card--final">
+                  <div class="trn-team <%= fHomeWin?'trn-team--winner':'' %>"><span class="trn-team-name"><%- renderTeamName(fHome,'Time') %></span><span class="trn-score"><%= fHasScore?fGame.homeGoals:'–' %></span></div>
+                  <div class="trn-team <%= fAwayWin?'trn-team--winner':'' %>"><span class="trn-team-name"><%- renderTeamName(fAway,'Time') %></span><span class="trn-score"><%= fHasScore?fGame.awayGoals:'–' %></span></div>
+                  <% if (fGame.decidedBy==='PENALTIES'&&fGame.homePenalties!=null) { %><div class="trn-penalty-note">Pênaltis: <%= fGame.homePenalties %>–<%= fGame.awayPenalties %></div><% } %>
+                </div>
+              </td>
+              <% } %>
+            </tr>
+            <tr>
+              <td style="height:14px;"></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td style="vertical-align:top;">
+                <% var g1=semiGames[1]; var h1=teamById.get(g1.homeTeamId); var a1=teamById.get(g1.awayTeamId); var hw1=g1.winnerTeamId!=null&&g1.winnerTeamId===g1.homeTeamId; var aw1=g1.winnerTeamId!=null&&g1.winnerTeamId===g1.awayTeamId; var hs1=g1.homeGoals!=null&&g1.awayGoals!=null; %>
+                <div class="trn-game-card">
+                  <div class="trn-team <%= hw1?'trn-team--winner':'' %>"><span class="trn-team-name"><%- renderTeamName(h1,'Time') %></span><span class="trn-score"><%= hs1?g1.homeGoals:'–' %></span></div>
+                  <div class="trn-team <%= aw1?'trn-team--winner':'' %>"><span class="trn-team-name"><%- renderTeamName(a1,'Time') %></span><span class="trn-score"><%= hs1?g1.awayGoals:'–' %></span></div>
+                  <% if (g1.decidedBy==='PENALTIES'&&g1.homePenalties!=null) { %><div class="trn-penalty-note">Pênaltis: <%= g1.homePenalties %>–<%= g1.awayPenalties %></div><% } %>
+                </div>
+              </td>
+              <td style="border-right:1.5px solid <%= connColor %>;border-top:1.5px solid <%= connColor %>;"></td>
+            </tr>
+            <% } else if (semiGames.length === 1) { %>
+            <tr>
+              <td style="vertical-align:top;width:260px;">
+                <div class="trn-bracket-label">Semifinais</div>
+                <% var g0=semiGames[0]; var h0=teamById.get(g0.homeTeamId); var a0=teamById.get(g0.awayTeamId); var hw0=g0.winnerTeamId!=null&&g0.winnerTeamId===g0.homeTeamId; var aw0=g0.winnerTeamId!=null&&g0.winnerTeamId===g0.awayTeamId; var hs0=g0.homeGoals!=null&&g0.awayGoals!=null; %>
+                <div class="trn-game-card">
+                  <div class="trn-team <%= hw0?'trn-team--winner':'' %>"><span class="trn-team-name"><%- renderTeamName(h0,'Time') %></span><span class="trn-score"><%= hs0?g0.homeGoals:'–' %></span></div>
+                  <div class="trn-team <%= aw0?'trn-team--winner':'' %>"><span class="trn-team-name"><%- renderTeamName(a0,'Time') %></span><span class="trn-score"><%= hs0?g0.awayGoals:'–' %></span></div>
+                  <% if (g0.decidedBy==='PENALTIES'&&g0.homePenalties!=null) { %><div class="trn-penalty-note">Pênaltis: <%= g0.homePenalties %>–<%= g0.awayPenalties %></div><% } %>
+                </div>
+              </td>
+              <td style="border-top:1.5px solid <%= connColor %>;vertical-align:middle;width:32px;"></td>
+              <% if (fGame) { %>
+              <td style="vertical-align:top;padding-left:0;width:280px;">
+                <div class="trn-bracket-label">Final</div>
+                <% if (champion) { %><div class="trn-champion-tag">...<%- renderTeamName(champion,'Campeão') %></div><% } %>
+                <div class="trn-game-card trn-game-card--final">
+                  <div class="trn-team <%= fHomeWin?'trn-team--winner':'' %>"><span class="trn-team-name"><%- renderTeamName(fHome,'Time') %></span><span class="trn-score"><%= fHasScore?fGame.homeGoals:'–' %></span></div>
+                  <div class="trn-team <%= fAwayWin?'trn-team--winner':'' %>"><span class="trn-team-name"><%- renderTeamName(fAway,'Time') %></span><span class="trn-score"><%= fHasScore?fGame.awayGoals:'–' %></span></div>
+                  <% if (fGame.decidedBy==='PENALTIES'&&fGame.homePenalties!=null) { %><div class="trn-penalty-note">Pênaltis: <%= fGame.homePenalties %>–<%= fGame.awayPenalties %></div><% } %>
+                </div>
+              </td>
+              <% } %>
+            </tr>
+            <% } else if (fGame) { %>
+            <tr>
+              <td style="vertical-align:top;padding-left:0;" colspan="3">
+                <div class="trn-bracket-label">Final</div>
+                <% if (champion) { %><div class="trn-champion-tag"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3h14l2 5c0 3.866-3.134 7-7 7H10C6.134 15 3 11.866 3 8L5 3zm7 13c2.21 0 4-1.79 4-4H8c0 2.21 1.79 4 4 4zm-3 2h6l1 3H8l1-3z"/></svg><%- renderTeamName(champion,'Campeão') %></div><% } %>
+                <div class="trn-game-card trn-game-card--final" style="width:220px;">
+                  <div class="trn-team <%= fHomeWin?'trn-team--winner':'' %>"><span class="trn-team-name"><%- renderTeamName(fHome,'Time') %></span><span class="trn-score"><%= fHasScore?fGame.homeGoals:'–' %></span></div>
+                  <div class="trn-team <%= fAwayWin?'trn-team--winner':'' %>"><span class="trn-team-name"><%- renderTeamName(fAway,'Time') %></span><span class="trn-score"><%= fHasScore?fGame.awayGoals:'–' %></span></div>
+                  <% if (fGame.decidedBy==='PENALTIES'&&fGame.homePenalties!=null) { %><div class="trn-penalty-note">Pênaltis: <%= fGame.homePenalties %>–<%= fGame.awayPenalties %></div><% } %>
+                </div>
+              </td>
+            </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+      <% } %>
+
+      <div class="grid gap-4">
+        <div id="tournament-standings-export" class="tournament-export">
+          <div class="export-header export-only">
+            <div>
+              <div class="export-title"><%= (brand.name || "Nome da Pelada").toUpperCase() %> - TORNEIO</div>
+              <div class="export-subtitle">Classificação da pelada</div>
+            </div>
+            <div class="export-logo">
+              <img src="<%= brand.logoSmall || '/img/logo-64x64.svg' %>" alt="<%= brand.name || 'Nome da Pelada' %>" />
+            </div>
+          </div>
+
+          <div class="export-card rounded-2xl border border-horriver-border/60 bg-black/40 p-4">
+            <h3 class="text-sm font-semibold text-horriver-light mb-2">Classificação</h3>
+            <div class="overflow-x-auto">
+              <table class="min-w-[520px] w-full text-[11px]">
+                <thead class="text-horriver-gray">
+                  <tr>
+                    <th class="text-left py-2 pr-3">#</th>
+                    <th class="text-left py-2 pr-3">Time</th>
+                    <th class="text-center py-2">P</th>
+                    <th class="text-center py-2">V</th>
+                    <th class="text-center py-2">E</th>
+                    <th class="text-center py-2">D</th>
+                    <th class="text-center py-2">SG</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% standings.forEach((row, idx) => { %>
+                    <tr class="border-t border-horriver-border/40">
+                      <td class="py-2 pr-3 text-horriver-gray"><%= idx + 1 %></td>
+                      <td class="py-2 pr-3 text-horriver-light"><%- renderTeamName(teamById.get(row.teamId), teamNameFromRow(row)) %></td>
+                      <td class="py-2 text-center"><%= statVal(row, "points", "pts") %></td>
+                      <td class="py-2 text-center"><%= statVal(row, "wins", "v") %></td>
+                      <td class="py-2 text-center"><%= statVal(row, "draws", "e") %></td>
+                      <td class="py-2 text-center"><%= statVal(row, "losses", "d") %></td>
+                      <td class="py-2 text-center"><%= statVal(row, "goalDiff", "sg") %></td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="export-footer export-only"><%= brand.instagramLabel || brand.name || 'Nome da Pelada' %></div>
+        </div>
+
+        <div id="tournament-games-export" class="tournament-export">
+          <div class="export-header export-only">
+            <div>
+              <div class="export-title"><%= (brand.name || "Nome da Pelada").toUpperCase() %> - TORNEIO</div>
+              <div class="export-subtitle">Jogos e resultados</div>
+            </div>
+            <div class="export-logo">
+              <img src="<%= brand.logoSmall || '/img/logo-64x64.svg' %>" alt="<%= brand.name || 'Nome da Pelada' %>" />
+            </div>
+          </div>
+
+          <% stages.forEach((stage) => {
+              const stageGames = gamesByStage[stage] || [];
+              if (!stageGames.length) return;
+          %>
+            <div class="export-card rounded-2xl border border-horriver-border/60 bg-black/40 p-4 mb-4 last:mb-0">
+              <h3 class="text-sm font-semibold text-horriver-light mb-2"><%= stageLabels[stage] || stage %></h3>
+              <div class="grid gap-3">
+                <% stageGames.forEach((game) => { %>
+                  <div class="game-card rounded-xl border border-horriver-border/60 bg-black/50 p-3">
+                    <div class="flex items-center justify-between gap-3 text-[11px]">
+                      <div class="text-horriver-light">
+                        <%- renderTeamName(teamById.get(game.homeTeamId), "Time") %>
+                        <span class="text-horriver-gray">x</span>
+                        <%- renderTeamName(teamById.get(game.awayTeamId), "Time") %>
+                      </div>
+                      <div class="score text-horriver-orange font-semibold">
+                        <%= game.homeGoals ?? "-" %> x <%= game.awayGoals ?? "-" %>
+                      </div>
+                    </div>
+                    <% if (game.decidedBy === "PENALTIES") { %>
+                      <div class="text-[10px] text-horriver-gray mt-1">
+                        Decidido nos pênaltis
+                        <% if (game.homePenalties != null && game.awayPenalties != null) { %>
+                          <span class="ml-2 text-[10px] text-horriver-gray">
+                            Penaltis: <%= game.homePenalties %>-<%= game.awayPenalties %>
+                          </span>
+                        <% } %>
+                      </div>
+                    <% } %>
+                  </div>
+                <% }); %>
+              </div>
+            </div>
+          <% }); %>
+
+          <div class="export-footer export-only"><%= brand.instagramLabel || brand.name || 'Nome da Pelada' %></div>
+        </div>
+      </div>
+    </section>
+  <% } %>
+
+  <!-- Card grande -->
+  <section
+    class="relative mt-4 rounded-3xl border border-horriver-red/60 overflow-hidden
+           bg-gradient-to-b from-black/80 via-horriver-dark to-black/95 shadow-card">
+
+    <!-- Glows -->
+    <div class="absolute inset-0 pointer-events-none opacity-70">
+      <div class="absolute -top-32 left-10 w-80 h-80 bg-horriver-orange/15 blur-3xl rounded-full"></div>
+      <div class="absolute bottom-[-120px] right-[-80px] w-[380px] h-[380px] bg-horriver-red/30 blur-3xl rounded-full"></div>
+    </div>
+
+    <!-- Conteúdo -->
+    <div class="relative z-10 px-4 md:px-6 py-4 md:py-5">
+
+      <!-- Título -->
+      <div class="flex items-center justify-between gap-4 mb-3">
+        <div>
+          <h2 class="font-title text-xl text-horriver-light">Estatísticas da pelada</h2>
+          <p class="text-[11px] text-horriver-gray">
+            Jogadores em ordem alfabética, com gols, assistências e presença<%= showRatings ? ", nota." : "." %>
+          </p>
+        </div>
+
+        <p class="text-[11px] text-horriver-gray">
+          Total de jogadores:
+          <span class="text-horriver-orange font-semibold"><%= safeStats.length %></span>
+        </p>
+      </div>
+
+      <!-- MOBILE FIX – SCROLL HORIZONTAL -->
+      <div class="rounded-2xl border border-horriver-red/50 bg-black/60 overflow-hidden">
+
+        <!-- WRAPPER COM SCROLL HORIZONTAL NO MOBILE -->
+        <div class="overflow-x-auto md:overflow-x-visible">
+
+          <!-- TABELA COM MIN WIDTH PRA MOBILE -->
+          <table class="match-stats-table min-w-[620px] w-full text-[11px] sm:text-xs" data-sortable="match-stats">
+            <thead class="bg-gradient-to-r from-horriver-red/70 via-horriver-red/60 to-horriver-orange/70">
+              <tr>
+                <th class="px-3 py-2 text-left w-10 sticky left-0 z-20 bg-horriver-red/70">#</th>
+                <th class="px-3 py-2 text-left cursor-pointer select-none sticky left-10 z-20 bg-horriver-red/70" data-sort="name">Jogador</th>
+                <th class="px-3 py-2 text-left">Posição</th>
+                <th class="px-3 py-2 text-center cursor-pointer select-none" data-sort="present">Presente</th>
+                <th class="px-3 py-2 text-center cursor-pointer select-none" data-sort="goals">Gols</th>
+                <th class="px-3 py-2 text-center cursor-pointer select-none" data-sort="assists">Assist.</th>
+                <% if (hasSaves) { %>
+                  <th class="px-3 py-2 text-center cursor-pointer select-none" data-sort="saves">Defesas</th>
+                <% } %>
+                <% if (showRatings) { %>
+                  <th class="px-3 py-2 text-center cursor-pointer select-none" data-sort="rating">Nota</th>
+                <% } %>
+                <th class="px-3 py-2 text-center cursor-pointer select-none" data-sort="photo">Foto</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <% if (!safeStats.length) { %>
+                <tr>
+                  <td colspan="<%= statsColspan %>" class="px-3 py-4 text-center text-sm text-horriver-gray">
+                    Nenhuma estatística lançada para esta pelada.
+                  </td>
+                </tr>
+              <% } else { %>
+                <% safeStats.forEach((s, idx) => { %>
+                  <tr class="border-t border-horriver-red/30 hover:bg-white/5 transition-colors" data-name="<%= (s.player.name || '').toLowerCase() %>" data-position="<%= (s.player.position || '').toLowerCase() %>" data-present="<%= s.present ? 1 : 0 %>" data-goals="<%= s.goals || 0 %>" data-assists="<%= s.assists || 0 %>" data-saves="<%= s.saves != null ? s.saves : -1 %>" <%- showRatings ? `data-rating="${s.rating != null ? s.rating : 0}"` : "" %> data-photo="<%= s.appearedInPhoto ? 1 : 0 %>">
+
+                    <!-- # -->
+                    <td class="px-3 py-2 text-[11px] text-horriver-gray sticky left-0 z-10 bg-black/90" data-label="#"><%= idx + 1 %></td>
+
+                    <!-- Nome -->
+                    <td class="px-3 py-2 whitespace-nowrap sticky left-10 z-10 bg-black/90" data-label="Jogador">
+                      <span class="text-horriver-light text-[13px]">
+                        <%= s.player.name %>
+                      </span>
+                      <% if (s.player.nickname) { %>
+                        <span class="text-horriver-gray text-[10px]">
+                          ("<%= s.player.nickname %>")
+                        </span>
+                      <% } %>
+                    </td>
+
+                    <!-- Posição -->
+                    <td class="px-3 py-2 text-[11px] text-horriver-orange uppercase whitespace-nowrap" data-label="Pos.">
+                      <%= s.player.position %>
+                    </td>
+
+                    <!-- Presente -->
+                    <td class="px-3 py-2 text-center" data-label="Pres.">
+                      <% if (s.present) { %>
+                        <span class="text-emerald-400 text-sm">✓</span>
+                      <% } else { %>
+                        <span class="text-horriver-gray/70 text-sm">—</span>
+                      <% } %>
+                    </td>
+
+                    <!-- Gols -->
+                    <td class="px-3 py-2 text-center font-semibold text-horriver-light" data-label="Gols">
+                      <%= s.goals || 0 %>
+                    </td>
+
+                    <!-- Assist -->
+                    <td class="px-3 py-2 text-center font-semibold text-horriver-light" data-label="Assist.">
+                      <%= s.assists || 0 %>
+                    </td>
+
+                    <% if (hasSaves) { %>
+                      <td class="px-3 py-2 text-center font-semibold <%= s.saves != null ? 'text-horriver-light' : 'text-horriver-gray/70' %>" data-label="Defesas">
+                        <%= s.saves != null ? s.saves : "—" %>
+                      </td>
+                    <% } %>
+
+                    <% if (showRatings) { %>
+                      <!-- Nota -->
+                      <td class="px-3 py-2 text-center font-semibold text-horriver-light" data-label="Nota">
+                        <%= fmtRating(s.rating) %>
+                      </td>
+                    <% } %>
+
+                    <!-- Foto -->
+                    <td class="px-3 py-2 text-center" data-label="Foto">
+                      <% if (s.appearedInPhoto) { %>
+                        <span class="text-horriver-orange text-base">📷</span>
+                      <% } else { %>
+                        <span class="text-horriver-gray/70 text-xs">—</span>
+                      <% } %>
+                    </td>
+
+                  </tr>
+                <% }) %>
+              <% } %>
+            </tbody>
+          </table>
+
+        </div>
+      </div>
+
+      <!-- Botão voltar -->
+      <div class="mt-4 flex justify-end">
+        <a
+          href="/"
+          class="inline-flex items-center px-4 py-1.5 rounded-full text-[11px]
+                 border border-horriver-border text-horriver-gray
+                 hover:border-horriver-orange hover:text-horriver-orange
+                 transition-colors">
+          Voltar para a home
+        </a>
+      </div>
+
+    </div>
+  </section>
+</section>
+
+<script>
+  (() => {
+    const table = document.querySelector('table[data-sortable="match-stats"]');
+    if (!table) return;
+    const tbody = table.querySelector('tbody');
+    const headers = Array.from(table.querySelectorAll('th[data-sort]'));
+    let currentSort = { key: 'name', dir: 'asc' };
+
+    const getValue = (row, key) => {
+      switch (key) {
+        case 'name':
+          return row.dataset.name || '';
+        case 'present':
+        case 'goals':
+        case 'assists':
+        case 'saves':
+        case 'rating':
+        case 'photo':
+          return Number(row.dataset[key] || 0);
+        case 'position':
+          return row.dataset.position || '';
+        default:
+          return row.dataset[key] || '';
+      }
+    };
+
+    const sortRows = (key) => {
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      const dir = currentSort.key === key && currentSort.dir === 'asc' ? 'desc' : 'asc';
+      currentSort = { key, dir };
+      rows.sort((a, b) => {
+        const av = getValue(a, key);
+        const bv = getValue(b, key);
+        if (typeof av === 'number' && typeof bv === 'number') {
+          return dir === 'asc' ? av - bv : bv - av;
+        }
+        return dir === 'asc'
+          ? String(av).localeCompare(String(bv))
+          : String(bv).localeCompare(String(av));
+      });
+      rows.forEach((row) => tbody.appendChild(row));
+    };
+
+    headers.forEach((th) => {
+      th.addEventListener('click', () => sortRows(th.dataset.sort));
+    });
+  })();
+</script>
+
+<script>
+  (() => {
+    const buttons = Array.from(document.querySelectorAll('[data-export-target]'));
+    if (!buttons.length) return;
+
+    const matchId = <%= match.id %>;
+
+    const downloadBlob = (blob, filename) => {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    };
+
+    const runExport = async (targetId, name, button) => {
+      const type = targetId.includes('games') ? 'games' : 'standings';
+      const original = button?.textContent;
+      try {
+        if (button) {
+          button.textContent = 'Gerando...';
+          button.disabled = true;
+        }
+        const res = await fetch(`/share/tournament.jpg?matchId=${matchId}&type=${type}`);
+        if (!res.ok) throw new Error(await res.text().catch(() => `Erro ${res.status}`));
+        const blob = await res.blob();
+        downloadBlob(blob, `${name}.jpg`);
+      } catch (err) {
+        console.error(err);
+        alert('Não foi possível gerar a imagem do torneio. Tente novamente.');
+      } finally {
+        if (button) {
+          button.textContent = original;
+          button.disabled = false;
+        }
+      }
+    };
+
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        runExport(btn.dataset.exportTarget, btn.dataset.exportName || 'tournament', btn);
+      });
+    });
+  })();
+</script>
+
+
+
+

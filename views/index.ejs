@@ -1,0 +1,1204 @@
+<%
+  // ===============================
+  // Helpers gerais
+  // ===============================
+  const fmtDate = (d) =>
+    d ? new Date(d).toLocaleDateString("pt-BR", { timeZone: 'America/Sao_Paulo' }) : "-";
+
+  const limit = (arr, n) => (arr && arr.length ? arr.slice(0, n) : []);
+
+  const fmtRating = (val) => {
+    if ((!val && val !== 0) || Number.isNaN(val)) return "0,00";
+    return Number(val).toFixed(2).replace(".", ",");
+  };
+
+  const monthNames = [
+    "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+    "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
+  ];
+
+  // Stats do mês (craque)
+  const mStats =
+    (typeof monthlyStats !== "undefined" && monthlyStats) || null;
+
+  // Stats da semana (craque da semana)
+  const wStats =
+    (typeof weeklyStats !== "undefined" && weeklyStats) || null;
+
+  // ===============================
+  // Hall da Fama - Destaques da temporada (carrossel)
+  // ===============================
+  const highlightAwards = Array.isArray(seasonHighlightAwards)
+    ? seasonHighlightAwards
+    : [];
+
+  const hallYear = typeof seasonHighlightYear !== "undefined"
+    ? seasonHighlightYear
+    : null;
+
+  const awardByCat = {};
+  highlightAwards.forEach((a) => {
+    awardByCat[a.category] = a;
+  });
+
+  const catLabelMap = {
+    melhor_jogador: "Craque da temporada",
+    artilheiro: "Artilheiro da temporada",
+    assistente: "Rei das assistências",
+    melhor_goleiro: "Muralha da temporada",
+    melhor_zagueiro: "Melhor zagueiro",
+    melhor_meia: "Maestro da temporada",
+    melhor_atacante: "Melhor atacante"
+  };
+
+  // Gradientes pensados pra combinar com o site e com a ideia de prêmio
+  const catGradientMap = {
+    melhor_jogador: "from-yellow-300 via-amber-300 to-yellow-500", // Ballon d'Or vibes
+    artilheiro: "from-yellow-400 via-amber-400 to-orange-500",      // ouro quente
+    assistente: "from-emerald-400 via-emerald-500 to-emerald-700",  // verde (assist)
+    melhor_goleiro: "from-sky-400 via-cyan-500 to-blue-600",
+    melhor_zagueiro: "from-slate-500 via-slate-600 to-slate-800",
+    melhor_meia: "from-purple-400 via-violet-500 to-fuchsia-500",
+    melhor_atacante: "from-rose-500 via-red-500 to-orange-500"
+  };
+
+  const hasHallCarousel = highlightAwards.length > 0;
+
+  // Monta slides em ordem:
+  // 1) Craque
+  // 2) Artilheiro + Assistente
+  // 3) Goleiro + Zagueiro
+  // 4) Meia + Atacante
+  const hallSlides = [];
+
+  if (awardByCat.melhor_jogador) {
+    hallSlides.push({
+      key: "craque",
+      type: "single",
+      title: "Craque da temporada",
+      awards: [awardByCat.melhor_jogador]
+    });
+  }
+
+  const ataqueAwards = [];
+  if (awardByCat.artilheiro) ataqueAwards.push(awardByCat.artilheiro);
+  if (awardByCat.assistente) ataqueAwards.push(awardByCat.assistente);
+  if (ataqueAwards.length) {
+    hallSlides.push({
+      key: "ataque",
+      type: "pair",
+      title: "Reis do ataque",
+      awards: ataqueAwards
+    });
+  }
+
+  const defesaAwards = [];
+  if (awardByCat.melhor_goleiro) defesaAwards.push(awardByCat.melhor_goleiro);
+  if (awardByCat.melhor_zagueiro) defesaAwards.push(awardByCat.melhor_zagueiro);
+  if (defesaAwards.length) {
+    hallSlides.push({
+      key: "defesa",
+      type: "pair",
+      title: "Muralhas lá atrás",
+      awards: defesaAwards
+    });
+  }
+
+  const criacaoAwards = [];
+  if (awardByCat.melhor_meia) criacaoAwards.push(awardByCat.melhor_meia);
+  if (awardByCat.melhor_atacante) criacaoAwards.push(awardByCat.melhor_atacante);
+  if (criacaoAwards.length) {
+    hallSlides.push({
+      key: "criacao",
+      type: "pair",
+      title: "Maestro e matador",
+      awards: criacaoAwards
+    });
+  }
+%>
+
+<section class="home-sections flex flex-col gap-7 md:gap-10 animate-fadeIn overflow-x-hidden">
+
+  <!-- ======================================================
+       HALL DA FAMA – CARROSSEL DA TEMPORADA
+  ======================================================= -->
+  <% if (hasHallCarousel && hallSlides.length) { %>
+    <section
+      id="hallCarousel"
+      class="card-inner rounded-3xl px-5 py-6 md:px-8 md:py-8 space-y-4 relative overflow-hidden"
+      style="min-height: 280px;"
+    >
+      <div class="flex items-start justify-between gap-4 mb-2">
+        <div>
+          <p class="text-[11px] text-horriver-gray/80 uppercase tracking-[0.20em]">
+            Temporada <%= hallYear || "" %> • Premiação
+          </p>
+          <h1 class="text-2xl md:text-3xl font-title text-horriver-light">
+            Hall da Fama – Campeões da temporada
+          </h1>
+          <p class="text-xs md:text-sm text-horriver-gray mt-1 max-w-xl">
+            Destaques oficiais da temporada <%= hallYear || '' %>, em evidência na home
+            até o fim do ano. Depois, eles ficam eternizados na página do Hall da Fama.
+          </p>
+        </div>
+
+        <!-- Dots -->
+        <div class="flex flex-col items-center md:items-end gap-1 text-[10px]">
+          <div class="flex items-center gap-2 mb-1">
+            <% hallSlides.forEach((slide, i) => { %>
+              <button
+                type="button"
+                class="hall-dot w-2 h-2 rounded-full border border-horriver-orange/70
+                       <%= i === 0 ? 'bg-horriver-orange' : 'bg-transparent' %>"
+                data-index="<%= i %>"
+                aria-label="Ir para slide <%= i + 1 %>"
+              ></button>
+            <% }) %>
+          </div>
+          <span class="text-horriver-gray/70">
+            Use as setas ou clique nos pontos
+          </span>
+        </div>
+      </div>
+
+      <!-- Slides -->
+      <div class="relative mt-3 h-[260px] md:h-[320px] lg:h-[360px]">
+        <% hallSlides.forEach((slide, idx) => { %>
+          <div
+            class="hall-slide absolute inset-0 transition-all duration-500 ease-out
+                   <%= idx === 0
+                        ? 'opacity-100 translate-x-0 pointer-events-auto z-10'
+                        : 'opacity-0 translate-x-6 pointer-events-none z-0' %>"
+            data-index="<%= idx %>"
+          >
+            <% if (slide.type === "single") {
+                 const a = slide.awards[0];
+                 const p = a.player || {};
+                 const grad = catGradientMap[a.category] || "from-slate-500 via-slate-600 to-slate-800";
+                 const label = catLabelMap[a.category] || a.category;
+            %>
+              <!-- Card único: Craque da temporada (Ballon d'Or style) -->
+              <div
+                class="relative w-full h-full bg-gradient-to-r <%= grad %> rounded-3xl
+                       shadow-card-soft flex flex-col md:flex-row items-center
+                       gap-6 px-5 md:px-10 py-6 md:py-8 overflow-hidden"
+              >
+                <!-- Aureola dourada no fundo -->
+                <div
+                  class="pointer-events-none absolute -right-16 -bottom-16 w-56 h-56 rounded-full
+                         border border-yellow-300/40 bg-yellow-300/10 blur-md"
+                ></div>
+
+                <!-- Estrela de destaque -->
+                <div
+                  class="section-badge absolute top-4 left-4 inline-flex items-center gap-2 px-3 py-1
+                         rounded-full bg-black/40 border border-yellow-300/70"
+                >
+                  <span class="text-yellow-300 text-base">?</span>
+                  <span class="text-[11px] text-yellow-100 tracking-[0.18em] uppercase">
+                    Craque máximo
+                  </span>
+                </div>
+
+                <div class="flex-1 space-y-3 relative z-10">
+                  <p class="text-[11px] uppercase tracking-[0.2em] text-black/70">
+                    <%= label %>
+                  </p>
+                  <h2 class="text-2xl md:text-3xl font-title text-black">
+                    <%= p.name || 'Jogador' %>
+                  </h2>
+                  <% if (p.nickname) { %>
+                    <p class="text-sm text-black/80">
+                      "<%= p.nickname %>"
+                    </p>
+                  <% } %>
+                  <% if (p.position) { %>
+                    <p class="text-[11px] text-black/75 uppercase">
+                      <%= p.position %>
+                    </p>
+                  <% } %>
+                  <p class="text-[11px] text-black/75 mt-2 max-w-md">
+                    Eleito o grande nome da temporada <%= hallYear || '' %>.
+                    Aquele nível de futebol que vira referência na resenha por muito tempo.
+                  </p>
+                </div>
+
+                <!-- Foto grande -->
+                <div
+                  class="relative z-10 w-32 h-32 md:w-40 md:h-40 rounded-full border-[5px] border-yellow-200/95
+                         bg-black/30 flex items-center justify-center overflow-hidden shadow-xl"
+                >
+                  <% if (p.photoUrl) { %>
+                    <img
+                      src="<%= thumbUrl(p.photoUrl, 320) %>"
+                      srcset="<%= thumbUrl(p.photoUrl, 320) %> 1x, <%= thumbUrl(p.photoUrl, 640) %> 2x"
+                      sizes="160px"
+                      alt="<%= p.name %>"
+                      class="w-full h-full object-cover"
+                    />
+                  <% } else if (p.name) { %>
+                    <span class="text-4xl font-semibold text-white">
+                      <%= p.name.charAt(0).toUpperCase() %>
+                    </span>
+                  <% } else { %>
+                    <span class="text-3xl font-semibold text-white">?</span>
+                  <% } %>
+                </div>
+              </div>
+
+            <% } else { %>
+              <!-- Slides em pares (artilheiro+assistente, etc.) -->
+              <div
+                class="w-full h-full flex flex-col gap-4 md:gap-6 justify-center"
+              >
+                <p class="text-[11px] text-horriver-gray/80 uppercase tracking-[0.20em]">
+                  <%= slide.title %>
+                </p>
+
+                <div class="grid md:grid-cols-2 gap-4 md:gap-6">
+                  <% slide.awards.forEach((a) => {
+                       const p = a.player || {};
+                       const grad = catGradientMap[a.category] || "from-slate-500 via-slate-600 to-slate-800";
+                       const label = catLabelMap[a.category] || a.category;
+                  %>
+                    <div
+                      class="bg-gradient-to-r <%= grad %> rounded-3xl px-4 md:px-6 py-4 md:py-6
+                             shadow-card-soft flex items-center gap-4 md:gap-6 relative overflow-hidden"
+                    >
+                      <!-- leve overlay escuro pra aproximar do tema do site -->
+                      <div class="pointer-events-none absolute inset-0 bg-black/10"></div>
+
+                      <div class="flex-1 space-y-2 relative z-10">
+                        <p class="text-[10px] md:text-[11px] uppercase tracking-[0.18em] text-black/80">
+                          <%= label %>
+                        </p>
+                        <p class="text-lg md:text-xl font-semibold text-black">
+                          <%= p.name || 'Jogador' %>
+                          <% if (p.nickname) { %>
+                            <span class="text-[12px] text-black/75">
+                              ("<%= p.nickname %>")
+                            </span>
+                          <% } %>
+                        </p>
+                        <% if (p.position) { %>
+                          <p class="text-[10px] text-black/75 uppercase">
+                            <%= p.position %>
+                          </p>
+                        <% } %>
+                      </div>
+
+                      <div
+                        class="relative z-10 w-16 h-16 md:w-20 md:h-20 rounded-full border-[3px] border-white/85
+                               bg-black/20 flex items-center justify-center overflow-hidden shrink-0"
+                      >
+                        <% if (p.photoUrl) { %>
+                          <img
+                            src="<%= thumbUrl(p.photoUrl, 160) %>"
+                            srcset="<%= thumbUrl(p.photoUrl, 160) %> 1x, <%= thumbUrl(p.photoUrl, 320) %> 2x"
+                            sizes="80px"
+                            alt="<%= p.name %>"
+                            class="w-full h-full object-cover"
+                          />
+                        <% } else if (p.name) { %>
+                          <span class="text-2xl font-semibold text-white">
+                            <%= p.name.charAt(0).toUpperCase() %>
+                          </span>
+                        <% } else { %>
+                          <span class="text-xl font-semibold text-white">?</span>
+                        <% } %>
+                      </div>
+                    </div>
+                  <% }) %>
+                </div>
+              </div>
+            <% } %>
+          </div>
+        <% }) %>
+      </div>
+
+      <% if (hallSlides.length > 1) { %>
+        <!-- Controles -->
+        <div class="mt-4 flex items-center justify-between text-[11px]">
+          <button
+            id="hallPrev"
+            type="button"
+            class="inline-flex items-center gap-1 px-3 py-1 rounded-full
+                   bg-black/40 border border-horriver-border text-horriver-gray
+                   hover:border-horriver-orange hover:text-horriver-orange transition-colors"
+          >
+            ? Anterior
+          </button>
+          <button
+            id="hallNext"
+            type="button"
+            class="inline-flex items-center gap-1 px-3 py-1 rounded-full
+                   bg-black/40 border border-horriver-border text-horriver-gray
+                   hover:border-horriver-orange hover:text-horriver-orange transition-colors"
+          >
+            Próximo ?
+          </button>
+        </div>
+      <% } %>
+    </section>
+  <% } %>
+
+  <!-- ======================================================
+       HERO CAROUSEL — Craque da Semana / Craque do Mês / Foto
+  ======================================================= -->
+  <%
+    const heroSlides = [];
+    heroSlides.push({ type: 'weekly', label: 'Craque da semana' });
+    heroSlides.push({ type: 'monthly', label: 'Craque do mês' });
+    if (weeklyAward && weeklyAward.teamPhotoUrl) {
+      heroSlides.push({ type: 'photo', label: 'Time da semana' });
+    }
+  %>
+  <section
+    id="heroCarousel"
+    class="relative rounded-3xl border border-horriver-border overflow-hidden"
+    style="background: radial-gradient(circle at 18% 0%, rgba(139,19,32,0.28), transparent 52%), radial-gradient(circle at 82% 100%, rgba(255,122,26,0.1), transparent 44%), rgba(0,0,0,0.42); box-shadow: 0 18px 40px rgba(0,0,0,0.38);"
+  >
+    <!-- Top shine line -->
+    <div class="absolute inset-x-0 top-0 h-px pointer-events-none" style="background: linear-gradient(90deg, transparent, rgba(255,122,26,0.55), transparent);"></div>
+    <!-- Top bar: dots + nav -->
+    <div class="flex items-center justify-between px-5 pt-5 pb-0 md:px-8 md:pt-6">
+      <div class="flex items-center gap-1.5">
+        <% heroSlides.forEach((s, i) => { %>
+          <button
+            type="button"
+            class="hero-dot"
+            data-index="<%= i %>"
+            aria-label="Ir para: <%= s.label %>"
+          ></button>
+        <% }) %>
+      </div>
+      <% if (heroSlides.length > 1) { %>
+        <div class="flex items-center gap-1">
+          <button id="heroPrev" type="button"
+            class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-black/40 border border-horriver-border text-horriver-gray hover:border-horriver-orange hover:text-horriver-orange transition-colors"
+            aria-label="Slide anterior"
+          ><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg></button>
+          <button id="heroNext" type="button"
+            class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-black/40 border border-horriver-border text-horriver-gray hover:border-horriver-orange hover:text-horriver-orange transition-colors"
+            aria-label="Próximo slide"
+          ><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></button>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Slide track -->
+    <div class="hero-track">
+
+      <!-- Slide 0: Craque da Semana -->
+      <div class="hero-slide px-5 pb-6 pt-3 md:px-8 md:pb-8" data-index="0">
+        <% if (!weeklyAward || !weeklyAward.bestPlayer) { %>
+          <div class="flex flex-col items-center gap-3 py-8 text-horriver-gray/70">
+            <span class="inline-flex items-center px-3 py-1 rounded-full bg-horriver-red/20 border border-horriver-red/40 text-[11px] text-horriver-gray">Craque da semana</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+            <p class="text-sm text-center">Nenhum craque da semana definido ainda.</p>
+          </div>
+        <% } else { %>
+          <%
+            const weeklyOvr = weeklyAward.bestPlayer.overallDynamic != null
+              ? weeklyAward.bestPlayer.overallDynamic
+              : (weeklyAward.bestPlayer.baseOverall || null);
+          %>
+          <div class="hsc-layout">
+            <div class="hsc-info">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-horriver-red/20 border border-horriver-red/40 text-[10px] text-horriver-gray tracking-wide">Craque da semana</span>
+                <% if (weeklyAward.winningMatch) { %>
+                  <span class="text-[10px] text-horriver-gray/45"><%= fmtDate(weeklyAward.winningMatch.playedAt) %></span>
+                <% } %>
+              </div>
+              <div>
+                <h2 class="font-title text-[2rem] md:text-[2.8rem] text-horriver-light leading-[0.96]"><%= weeklyAward.bestPlayer.name %></h2>
+                <div class="flex items-center gap-2 mt-1.5 flex-wrap">
+                  <% if (weeklyAward.bestPlayer.position) { %>
+                    <span class="text-[10px] text-horriver-orange uppercase tracking-wide font-semibold"><%= weeklyAward.bestPlayer.position %></span>
+                  <% } %>
+                  <% if (weeklyOvr) { %>
+                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-horriver-red/20 border border-horriver-red/30 text-[9px]">
+                      <span class="text-horriver-gray/55 uppercase tracking-wider">OVR</span>&nbsp;<span class="font-bold text-horriver-light"><%= weeklyOvr %></span>
+                    </span>
+                  <% } %>
+                </div>
+              </div>
+              <div class="hsc-stats">
+                <div class="hsc-stat">
+                  <span class="hsc-stat__label">Gols</span>
+                  <span class="hsc-stat__line"></span>
+                  <span class="hsc-stat__val"><%= wStats ? wStats.goals : 0 %></span>
+                </div>
+                <div class="hsc-stat">
+                  <span class="hsc-stat__label">Assist.</span>
+                  <span class="hsc-stat__line"></span>
+                  <span class="hsc-stat__val"><%= wStats ? wStats.assists : 0 %></span>
+                </div>
+                <div class="hsc-stat">
+                  <span class="hsc-stat__label">Nota</span>
+                  <span class="hsc-stat__line"></span>
+                  <span class="hsc-stat__val"><%= wStats ? fmtRating(wStats.avgRating) : '0,00' %></span>
+                </div>
+              </div>
+            </div>
+            <div class="hsc-media">
+              <div class="hsc-glow"></div>
+              <% if (weeklyAward.bestPlayer.photoUrl) { %>
+                <img
+                  src="<%= thumbUrl(weeklyAward.bestPlayer.photoUrl, 356) %>"
+                  srcset="<%= thumbUrl(weeklyAward.bestPlayer.photoUrl, 356) %> 1x, <%= thumbUrl(weeklyAward.bestPlayer.photoUrl, 712) %> 2x"
+                  alt="<%= weeklyAward.bestPlayer.name %>"
+                  class="hsc-player-img" loading="lazy"
+                />
+              <% } else { %>
+                <div class="hsc-player-fb"><%= weeklyAward.bestPlayer.name.charAt(0).toUpperCase() %></div>
+              <% } %>
+            </div>
+          </div>
+        <% } %>
+      </div>
+
+      <!-- Slide 1: Craque do Mês -->
+      <div class="hero-slide px-5 pb-6 pt-3 md:px-8 md:pb-8" data-index="1">
+        <% if (!monthlyCraque) { %>
+          <div class="flex flex-col items-center gap-3 py-8 text-horriver-gray/70">
+            <span class="inline-flex items-center px-3 py-1 rounded-full bg-horriver-red/20 border border-horriver-red/40 text-[11px] text-horriver-gray">Craque do mês</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+            <p class="text-sm text-center">Nenhum craque do mês cadastrado ainda.</p>
+          </div>
+        <% } else { %>
+          <%
+            const monthlyOvr = monthlyCraque.craque && monthlyCraque.craque.overallDynamic != null
+              ? monthlyCraque.craque.overallDynamic
+              : (monthlyCraque.craque && monthlyCraque.craque.baseOverall ? monthlyCraque.craque.baseOverall : null);
+          %>
+          <div class="hsc-layout">
+            <div class="hsc-info">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-horriver-red/20 border border-horriver-red/40 text-[10px] text-horriver-gray tracking-wide">Craque do mês</span>
+                <span class="text-[10px] text-horriver-gray/45"><%= monthNames[(monthlyStatsMonth || monthlyCraque.month) - 1] %> <%= (monthlyStatsYear || monthlyCraque.year) %></span>
+              </div>
+              <% if (monthlyCraque.craque) { %>
+                <div>
+                  <h2 class="font-title text-[2rem] md:text-[2.8rem] text-horriver-light leading-[0.96]"><%= monthlyCraque.craque.name %></h2>
+                  <div class="flex items-center gap-2 mt-1.5 flex-wrap">
+                    <% if (monthlyCraque.craque.position) { %>
+                      <span class="text-[10px] text-horriver-orange uppercase tracking-wide font-semibold"><%= monthlyCraque.craque.position %></span>
+                    <% } %>
+                    <% if (monthlyOvr) { %>
+                      <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-horriver-red/20 border border-horriver-red/30 text-[9px]">
+                        <span class="text-horriver-gray/55 uppercase tracking-wider">OVR</span>&nbsp;<span class="font-bold text-horriver-light"><%= monthlyOvr %></span>
+                      </span>
+                    <% } %>
+                  </div>
+                </div>
+              <% } %>
+              <div class="hsc-stats">
+                <div class="hsc-stat">
+                  <span class="hsc-stat__label">Gols</span>
+                  <span class="hsc-stat__line"></span>
+                  <span class="hsc-stat__val"><%= mStats ? mStats.goals : 0 %></span>
+                </div>
+                <div class="hsc-stat">
+                  <span class="hsc-stat__label">Assist.</span>
+                  <span class="hsc-stat__line"></span>
+                  <span class="hsc-stat__val"><%= mStats ? mStats.assists : 0 %></span>
+                </div>
+                <div class="hsc-stat">
+                  <span class="hsc-stat__label">Jogos</span>
+                  <span class="hsc-stat__line"></span>
+                  <span class="hsc-stat__val"><%= mStats ? mStats.matches : 0 %></span>
+                </div>
+                <div class="hsc-stat">
+                  <span class="hsc-stat__label">Nota</span>
+                  <span class="hsc-stat__line"></span>
+                  <span class="hsc-stat__val"><%= mStats ? fmtRating(mStats.avgRating) : '0,00' %></span>
+                </div>
+              </div>
+            </div>
+            <div class="hsc-media">
+              <div class="hsc-glow"></div>
+              <% if (monthlyCraque.craque && monthlyCraque.craque.photoUrl) { %>
+                <img
+                  src="<%= thumbUrl(monthlyCraque.craque.photoUrl, 356) %>"
+                  srcset="<%= thumbUrl(monthlyCraque.craque.photoUrl, 356) %> 1x, <%= thumbUrl(monthlyCraque.craque.photoUrl, 712) %> 2x"
+                  alt="<%= monthlyCraque.craque.name %>"
+                  class="hsc-player-img" loading="lazy"
+                />
+              <% } else if (monthlyCraque.craque) { %>
+                <div class="hsc-player-fb"><%= monthlyCraque.craque.name.charAt(0).toUpperCase() %></div>
+              <% } else { %>
+                <div class="hsc-player-fb">?</div>
+              <% } %>
+            </div>
+          </div>
+        <% } %>
+      </div>
+
+      <!-- Slide 2: Foto da semana (condicional) -->
+      <% if (weeklyAward && weeklyAward.teamPhotoUrl) { %>
+        <div class="hero-slide px-5 pb-6 pt-3 md:px-8 md:pb-8" data-index="2">
+          <div class="hsc-layout">
+            <div class="hsc-info">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-horriver-red/20 border border-horriver-red/40 text-[10px] text-horriver-gray tracking-wide">Time da semana</span>
+                <% if (weeklyAward.winningMatch) { %>
+                  <span class="text-[10px] text-horriver-gray/45"><%= fmtDate(weeklyAward.winningMatch.playedAt) %></span>
+                <% } %>
+              </div>
+              <div>
+                <p class="font-title text-[1.75rem] md:text-[2.5rem] text-horriver-light leading-[0.96]">
+                  <%= (weeklyAward.winningMatch && weeklyAward.winningMatch.description) ? weeklyAward.winningMatch.description: 'Pelada da semana' %>
+                </p>
+                <p class="text-[10px] text-horriver-gray/50 mt-1.5 uppercase tracking-wide">Foto oficial da rodada</p>
+              </div>
+              <p class="text-[11px] text-horriver-gray/55 leading-snug">
+                Clique na foto para ampliar.
+              </p>
+            </div>
+            <div class="hsc-media">
+              <button type="button" class="hsc-team-photo-btn" data-src="<%= weeklyAward.teamPhotoUrl %>" aria-label="Ver foto em tamanho completo">
+                <img src="<%= weeklyAward.teamPhotoUrl %>" alt="Foto do time da semana"
+                     class="hsc-team-img" loading="lazy" />
+              </button>
+            </div>
+          </div>
+        </div>
+      <% } %>
+
+    </div><!-- /hero-track -->
+    <div class="hero-progress" id="heroProgress"></div>
+  </section>
+
+  <!-- Lightbox: foto do time -->
+  <div id="photoLightbox" class="photo-lightbox" role="dialog" aria-modal="true" aria-label="Foto do time" hidden>
+    <button type="button" class="photo-lightbox__close" aria-label="Fechar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
+    <img id="photoLightboxImg" src="" alt="" class="photo-lightbox__img" />
+  </div>
+
+  <!-- ======================================================
+       RANKINGS RÁPIDOS
+  ======================================================= -->
+  <section class="space-y-3">
+    <div class="flex items-center justify-between gap-2">
+      <div>
+        <p class="text-[10px] text-horriver-gray/60 uppercase tracking-[0.18em] mb-0.5">Temporada atual</p>
+        <h2 class="font-title text-2xl text-horriver-light">Rankings rápidos</h2>
+      </div>
+      <a href="/rankings" class="section-link">Ver todos →</a>
+    </div>
+
+    <div class="rk-tab-bar-wrap">
+      <div class="rk-tab-bar-inner bg-black/50 border border-horriver-border rounded-full p-1 text-[11px]">
+        <button class="rk-home-btn px-3 py-1 rounded-full bg-horriver-red text-horriver-light" data-target="rk-gols-home">Artilheiros</button>
+        <button class="rk-home-btn px-3 py-1 rounded-full text-horriver-gray hover:text-horriver-light transition-colors" data-target="rk-assist-home">Assistências</button>
+        <button class="rk-home-btn px-3 py-1 rounded-full text-horriver-gray hover:text-horriver-light transition-colors" data-target="rk-notas-home">Notas</button>
+        <button class="rk-home-btn px-3 py-1 rounded-full text-horriver-gray hover:text-horriver-light transition-colors" data-target="rk-fotos-home">Fotos</button>
+      </div>
+    </div>
+
+    <div class="bg-black/30 border border-horriver-border rounded-2xl px-3 py-3">
+
+      <!-- Artilheiros -->
+      <div id="rk-gols-home" class="rk-home-tab">
+        <% const gols = limit(topScorers, 5); %>
+        <% if (!gols.length) { %>
+          <div class="flex flex-col items-center gap-2 py-6 text-horriver-gray/70">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+            <p class="text-sm text-center">Nenhum dado de gols ainda.</p>
+          </div>
+        <% } else { %>
+          <div class="space-y-0.5">
+            <% gols.forEach((p, idx) => { %>
+              <div class="rk-row">
+                <span class="w-5 text-center text-[11px] font-bold shrink-0 <%= idx===0?'rk-rank-1':idx===1?'rk-rank-2':idx===2?'rk-rank-3':'rk-rank-other' %>"><%= idx+1 %></span>
+                <div class="w-7 h-7 rounded-full bg-horriver-orange/10 border border-horriver-orange/20 flex items-center justify-center text-[10px] font-bold text-horriver-orange shrink-0 overflow-hidden">
+                  <% if (p.photoUrl) { %><img src="<%= thumbUrl(p.photoUrl, 56) %>" alt="" class="w-full h-full object-cover" loading="lazy" /><% } else { %><%= p.name.charAt(0).toUpperCase() %><% } %>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-horriver-light text-[12px] font-medium truncate"><%= p.nickname || p.name %></p>
+                  <p class="text-horriver-orange text-[9px] uppercase tracking-wide"><%= p.position %></p>
+                </div>
+                <span class="rk-score shrink-0"><%= p.totalGoals || 0 %></span>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+
+      <!-- Assistências -->
+      <div id="rk-assist-home" class="rk-home-tab hidden">
+        <% const ass = limit(topAssists, 5); %>
+        <% if (!ass.length) { %>
+          <div class="flex flex-col items-center gap-2 py-6 text-horriver-gray/70">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+            <p class="text-sm text-center">Nenhum dado de assistências ainda.</p>
+          </div>
+        <% } else { %>
+          <div class="space-y-0.5">
+            <% ass.forEach((p, idx) => { %>
+              <div class="rk-row">
+                <span class="w-5 text-center text-[11px] font-bold shrink-0 <%= idx===0?'rk-rank-1':idx===1?'rk-rank-2':idx===2?'rk-rank-3':'rk-rank-other' %>"><%= idx+1 %></span>
+                <div class="w-7 h-7 rounded-full bg-horriver-orange/10 border border-horriver-orange/20 flex items-center justify-center text-[10px] font-bold text-horriver-orange shrink-0 overflow-hidden">
+                  <% if (p.photoUrl) { %><img src="<%= thumbUrl(p.photoUrl, 56) %>" alt="" class="w-full h-full object-cover" loading="lazy" /><% } else { %><%= p.name.charAt(0).toUpperCase() %><% } %>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-horriver-light text-[12px] font-medium truncate"><%= p.nickname || p.name %></p>
+                  <p class="text-horriver-orange text-[9px] uppercase tracking-wide"><%= p.position %></p>
+                </div>
+                <span class="rk-score shrink-0"><%= p.totalAssists || 0 %></span>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+
+      <!-- Notas -->
+      <div id="rk-notas-home" class="rk-home-tab hidden">
+        <% const notas = limit(topRatings, 5); %>
+        <% if (!notas.length) { %>
+          <div class="flex flex-col items-center gap-2 py-6 text-horriver-gray/70">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+            <p class="text-sm text-center">Nenhum dado de notas ainda.</p>
+          </div>
+        <% } else { %>
+          <div class="space-y-0.5">
+            <% notas.forEach((p, idx) => { %>
+              <div class="rk-row">
+                <span class="w-5 text-center text-[11px] font-bold shrink-0 <%= idx===0?'rk-rank-1':idx===1?'rk-rank-2':idx===2?'rk-rank-3':'rk-rank-other' %>"><%= idx+1 %></span>
+                <div class="w-7 h-7 rounded-full bg-horriver-orange/10 border border-horriver-orange/20 flex items-center justify-center text-[10px] font-bold text-horriver-orange shrink-0 overflow-hidden">
+                  <% if (p.photoUrl) { %><img src="<%= thumbUrl(p.photoUrl, 56) %>" alt="" class="w-full h-full object-cover" loading="lazy" /><% } else { %><%= p.name.charAt(0).toUpperCase() %><% } %>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-horriver-light text-[12px] font-medium truncate"><%= p.nickname || p.name %></p>
+                  <p class="text-horriver-orange text-[9px] uppercase tracking-wide"><%= p.position %></p>
+                </div>
+                <span class="rk-score shrink-0"><%= p.totalRating ? fmtRating(p.totalRating) : "0,00" %></span>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+
+      <!-- Fotos -->
+      <div id="rk-fotos-home" class="rk-home-tab hidden">
+        <% const fotos = limit(photoKings, 5); %>
+        <% if (!fotos.length) { %>
+          <div class="flex flex-col items-center gap-2 py-6 text-horriver-gray/70">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+            <p class="text-sm text-center">Nenhum dado de fotos ainda.</p>
+          </div>
+        <% } else { %>
+          <div class="space-y-0.5">
+            <% fotos.forEach((p, idx) => { %>
+              <div class="rk-row">
+                <span class="w-5 text-center text-[11px] font-bold shrink-0 <%= idx===0?'rk-rank-1':idx===1?'rk-rank-2':idx===2?'rk-rank-3':'rk-rank-other' %>"><%= idx+1 %></span>
+                <div class="w-7 h-7 rounded-full bg-horriver-orange/10 border border-horriver-orange/20 flex items-center justify-center text-[10px] font-bold text-horriver-orange shrink-0 overflow-hidden">
+                  <% if (p.photoUrl) { %><img src="<%= thumbUrl(p.photoUrl, 56) %>" alt="" class="w-full h-full object-cover" loading="lazy" /><% } else { %><%= p.name.charAt(0).toUpperCase() %><% } %>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-horriver-light text-[12px] font-medium truncate"><%= p.nickname || p.name %></p>
+                  <p class="text-horriver-orange text-[9px] uppercase tracking-wide"><%= p.position %></p>
+                </div>
+                <span class="rk-score shrink-0"><%= p.totalPhotos || 0 %></span>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ELENCO PREVIEW -->
+  <section class="space-y-3">
+    <div class="flex items-center justify-between gap-2">
+      <div>
+        <p class="text-[10px] text-horriver-gray/60 uppercase tracking-[0.18em] mb-0.5">Conheça o time</p>
+        <h2 class="font-title text-2xl text-horriver-light">Elenco em destaque</h2>
+      </div>
+      <a href="/elenco" class="section-link">Ver todos →</a>
+    </div>
+
+    <% if (!players || !players.length) { %>
+      <div class="flex flex-col items-center gap-2 py-6 text-horriver-gray/70">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+        <p class="text-sm text-center">Nenhum jogador cadastrado ainda.</p>
+      </div>
+    <% } else { %>
+      <div id="players-preview" class="player-cards-scroll text-xs">
+        <% players.forEach((p) => { %>
+          <%
+            const pOvr = p.overallDynamic != null ? p.overallDynamic : (p.baseOverall || null);
+          %>
+          <div class="player-card-snap card-unified p-3 flex flex-col gap-2" data-player-card>
+            <div class="flex items-center gap-3">
+              <div class="avatar-glow h-12 w-12 rounded-full bg-horriver-orange/10 flex items-center justify-center overflow-hidden shrink-0">
+                <% if (p.photoUrl) { %>
+                  <img
+                    src="<%= thumbUrl(p.photoUrl, 96) %>"
+                    srcset="<%= thumbUrl(p.photoUrl, 96) %> 1x, <%= thumbUrl(p.photoUrl, 192) %> 2x"
+                    sizes="48px"
+                    alt="<%= p.name %>"
+                    width="48" height="48"
+                    class="h-full w-full object-cover"
+                    loading="lazy"
+                  />
+                <% } else { %>
+                  <span class="text-base font-bold text-horriver-orange"><%= p.name.charAt(0).toUpperCase() %></span>
+                <% } %>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-semibold text-horriver-light text-[12px] truncate"><%= p.name %></p>
+                <% if (p.nickname) { %><p class="text-[10px] text-horriver-gray truncate">"<%= p.nickname %>"</p><% } %>
+                <p class="text-[10px] text-horriver-orange uppercase"><%= p.position %></p>
+              </div>
+              <% if (pOvr) { %>
+                <div class="shrink-0 w-9 h-9 rounded-xl bg-horriver-red/15 border border-horriver-red/30 flex flex-col items-center justify-center">
+                  <span class="text-[8px] text-horriver-gray/60 uppercase leading-none">OVR</span>
+                  <span class="text-[13px] font-bold text-horriver-light leading-tight"><%= pOvr %></span>
+                </div>
+              <% } %>
+            </div>
+            <% if ((p.totalGoals || 0) > 0 || (p.totalAssists || 0) > 0) { %>
+              <div class="player-card-stats">
+                <% if ((p.totalGoals || 0) > 0) { %><span class="player-card-stat"><strong><%= p.totalGoals %></strong> gols</span><% } %>
+                <% if ((p.totalAssists || 0) > 0) { %><span class="player-card-stat"><strong><%= p.totalAssists %></strong> assist.</span><% } %>
+              </div>
+            <% } %>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </section>
+
+  
+  <!-- ÚLTIMAS PELADAS -->
+  <section class="space-y-4">
+    <h2 class="font-title text-2xl text-horriver-light">
+      Últimas peladas
+    </h2>
+
+    <% if (!recentMatches || !recentMatches.length) { %>
+      <div class="flex flex-col items-center gap-2 py-6 text-horriver-gray/70">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+        <p class="text-sm text-center">Nenhuma pelada cadastrada ainda.</p>
+      </div>
+    <% } else { %>
+      <div class="space-y-2 text-xs">
+        <% recentMatches.forEach((m) => { %>
+          <div class="card-unified flex items-center justify-between px-3 py-2">
+            <div>
+              <p class="text-horriver-light font-medium">
+                <%= fmtDate(m.playedAt) %>
+              </p>
+              <p class="text-[11px] text-horriver-gray">
+                <%= m.description || "Sem descrição" %>
+              </p>
+            </div>
+            <div class="text-right text-[11px]">
+              <p class="text-horriver-orange">
+                <% if (m.winnerTeam) { %>
+                  <%= m.winnerTeam %>
+                <% } else if (m.winnerColor) { %>
+                  Time <%= m.winnerColor %>
+                <% } else { %>
+                  Sem time vencedor
+                <% } %>
+              </p>
+              <a
+                href="/matches/<%= m.id %>"
+                class="inline-flex items-center px-2.5 py-1 rounded-full border border-horriver-border
+                       text-horriver-gray hover:border-horriver-orange hover:text-horriver-orange
+                       transition-colors text-[10px]"
+              >
+                Ver stats →
+              </a>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </section>
+
+  <!-- FEED DE ATIVIDADES -->
+  <%
+    const _feed = typeof activityFeed !== 'undefined' ? activityFeed : [];
+    const _relTime = function(ts) {
+      if (!ts) return '';
+      const diff = Date.now() - new Date(ts).getTime();
+      const mins = Math.floor(diff / 60000);
+      const hrs  = Math.floor(diff / 3600000);
+      const days = Math.floor(diff / 86400000);
+      if (days >= 30) { const m = Math.floor(days / 30); return m + (m > 1 ? ' meses' : ' mês') + ' atrás'; }
+      if (days >= 1) return days + (days > 1 ? ' dias' : ' dia') + ' atrás';
+      if (hrs >= 1)  return hrs + 'h atrás';
+      if (mins >= 1) return mins + 'min atrás';
+      return 'agora';
+    };
+  %>
+  <% if (_feed.length) { %>
+  <section class="space-y-3">
+    <div class="flex items-center justify-between gap-2">
+      <div>
+        <p class="text-[10px] text-horriver-gray/60 uppercase tracking-[0.18em] mb-0.5">Atividade recente</p>
+        <h2 class="font-title text-2xl text-horriver-light">Feed</h2>
+      </div>
+    </div>
+
+    <div class="relative">
+      <!-- Linha de timeline -->
+      <div class="absolute left-[19px] top-4 bottom-4 w-px bg-gradient-to-b from-horriver-orange/40 via-horriver-border to-transparent pointer-events-none"></div>
+
+      <div class="space-y-1.5">
+        <% _feed.forEach(function(item) { %>
+          <%
+            const _isAward = item.type === 'weekly_award' || item.type === 'monthly_award';
+            const _isHat   = item.type === 'hat_trick';
+            const _isMatch = item.type === 'match';
+            const _iconBg  = _isHat   ? 'bg-yellow-500/15 border-yellow-500/40 text-yellow-400'
+                           : _isAward ? 'bg-horriver-orange/15 border-horriver-orange/40 text-horriver-orange'
+                           : 'bg-horriver-red/15 border-horriver-red/30 text-horriver-gray';
+          %>
+          <div class="flex items-start gap-3 pl-1">
+            <!-- Ícone / dot -->
+            <div class="shrink-0 mt-0.5 w-9 h-9 rounded-full border flex items-center justify-center <%= _iconBg %>">
+              <% if (_isHat) { %>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <% } else if (item.type === 'weekly_award') { %>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="6"/><path stroke-linecap="round" stroke-linejoin="round" d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12"/></svg>
+              <% } else if (item.type === 'monthly_award') { %>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+              <% } else { %>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+              <% } %>
+            </div>
+
+            <!-- Conteúdo -->
+            <div class="flex-1 min-w-0 rounded-2xl border border-horriver-border bg-white/[0.025] px-3 py-2.5">
+              <div class="flex items-start justify-between gap-2 flex-wrap">
+                <div class="min-w-0">
+                  <!-- Foto do jogador (quando houver) -->
+                  <% if (item.player && item.player.photoUrl) { %>
+                    <div class="flex items-center gap-2 mb-1.5">
+                      <div class="w-6 h-6 rounded-full overflow-hidden border border-horriver-orange/30 shrink-0">
+                        <img src="<%= thumbUrl(item.player.photoUrl, 48) %>" alt="" class="w-full h-full object-cover" loading="lazy" />
+                      </div>
+                      <span class="text-[10px] text-horriver-gray/70 uppercase tracking-wider"><%= item.player.position || '' %></span>
+                    </div>
+                  <% } %>
+                  <p class="text-xs font-semibold text-horriver-light leading-snug"><%= item.label %></p>
+                  <p class="text-[10px] text-horriver-gray/70 mt-0.5 leading-snug"><%= item.sub %></p>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                  <% if (item.timestamp) { %>
+                    <span class="text-[10px] text-horriver-gray/50 whitespace-nowrap"><%= _relTime(item.timestamp) %></span>
+                  <% } %>
+                  <% if (item.matchId) { %>
+                    <a href="/matches/<%= item.matchId %>"
+                       class="text-[10px] px-2 py-0.5 rounded-full border border-horriver-border text-horriver-gray hover:border-horriver-orange hover:text-horriver-orange transition-colors whitespace-nowrap">
+                      Ver →
+                    </a>
+                  <% } %>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+  </section>
+  <% } %>
+
+  <!-- TEXTO FINAL -->
+  <section class="mt-10 pt-6 border-t border-horriver-border text-center">
+    <div class="max-w-xl mx-auto space-y-3">
+      <div
+        class="section-badge inline-flex items-center gap-2 px-3 py-1 rounded-full
+               bg-horriver-red/20 border border-horriver-red/60 text-[11px]
+               text-horriver-gray"
+      >
+        Desde 2024 • Pelada e resenha
+      </div>
+
+      <h2 class="font-title text-3xl text-horriver-orange">
+        <%= brand.name || "Nome da Pelada" %>
+      </h2>
+      <p class="text-sm text-horriver-gray">
+        Estatísticas de pelada com cara de time profissional. Acompanhe gols,
+        assistências, notas, presenças e destaques da nossa resenha. Tudo
+        organizado como se fosse clube grande — mas sempre com o espírito da
+        pelada entre amigos.
+      </p>
+    </div>
+  </section>
+</section>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    // ==========================
+    // Tabs de ranking na home
+    // ==========================
+    const rkBtns = document.querySelectorAll(".rk-home-btn");
+    const rkTabs = document.querySelectorAll(".rk-home-tab");
+
+    rkBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const target = btn.dataset.target;
+
+        rkBtns.forEach((b) => {
+          b.classList.remove("bg-horriver-red", "text-horriver-light");
+          b.classList.add("text-horriver-gray");
+        });
+        rkTabs.forEach((t) => t.classList.add("hidden"));
+
+        btn.classList.add("bg-horriver-red", "text-horriver-light");
+        const tab = document.getElementById(target);
+        if (tab) tab.classList.remove("hidden");
+      });
+    });
+
+    // ==========================
+    // Elenco em destaque: sorteia 8 jogadores
+    // ==========================
+    const playerCards = Array.from(
+      document.querySelectorAll("[data-player-card]")
+    );
+    if (playerCards.length > 8) {
+      const shuffled = [...playerCards].sort(() => Math.random() - 0.5);
+      shuffled.forEach((card, index) => {
+        card.style.display = index < 8 ? "" : "none";
+      });
+    }
+
+    // ==========================
+    // Carrossel Hall da Fama
+    // ==========================
+    const hallCarousel = document.getElementById("hallCarousel");
+    const hallSlidesEls = Array.from(document.querySelectorAll(".hall-slide"));
+    const hallDots = Array.from(document.querySelectorAll(".hall-dot"));
+    const prevBtn = document.getElementById("hallPrev");
+    const nextBtn = document.getElementById("hallNext");
+
+    let hallIndex = 0;
+    let hallTimer = null;
+
+    function setHallActive(idx) {
+      if (!hallSlidesEls.length) return;
+      const total = hallSlidesEls.length;
+      const newIndex = ((idx % total) + total) % total;
+
+      hallSlidesEls.forEach((slide, i) => {
+        if (i === newIndex) {
+          slide.classList.remove("opacity-0", "translate-x-6", "pointer-events-none", "z-0");
+          slide.classList.add("opacity-100", "translate-x-0", "pointer-events-auto", "z-10");
+        } else {
+          slide.classList.remove("opacity-100", "translate-x-0", "pointer-events-auto", "z-10");
+          slide.classList.add("opacity-0", "translate-x-6", "pointer-events-none", "z-0");
+        }
+      });
+
+      hallDots.forEach((dot, i) => {
+        if (i === newIndex) {
+          dot.classList.add("bg-horriver-orange");
+        } else {
+          dot.classList.remove("bg-horriver-orange");
+        }
+      });
+
+      hallIndex = newIndex;
+    }
+
+    function nextHall() {
+      setHallActive(hallIndex + 1);
+    }
+
+    function prevHall() {
+      setHallActive(hallIndex - 1);
+    }
+
+    function startHallAuto() {
+      if (hallTimer || hallSlidesEls.length <= 1) return;
+      hallTimer = setInterval(nextHall, 6000);
+    }
+
+    function stopHallAuto() {
+      if (hallTimer) {
+        clearInterval(hallTimer);
+        hallTimer = null;
+      }
+    }
+
+    if (hallSlidesEls.length) {
+      startHallAuto();
+
+      if (nextBtn) nextBtn.addEventListener("click", () => {
+        stopHallAuto();
+        nextHall();
+        startHallAuto();
+      });
+
+      if (prevBtn) prevBtn.addEventListener("click", () => {
+        stopHallAuto();
+        prevHall();
+        startHallAuto();
+      });
+
+      hallDots.forEach((dot) => {
+        dot.addEventListener("click", () => {
+          const idx = parseInt(dot.dataset.index, 10) || 0;
+          stopHallAuto();
+          setHallActive(idx);
+          startHallAuto();
+        });
+      });
+
+      if (hallCarousel) {
+        hallCarousel.addEventListener("mouseenter", stopHallAuto);
+        hallCarousel.addEventListener("mouseleave", startHallAuto);
+      }
+    }
+
+    // ==========================
+    // Hero Carousel
+    // ==========================
+    const HERO_DURATION = 6000;
+    const heroEl      = document.getElementById("heroCarousel");
+    const hSlides     = Array.from(document.querySelectorAll(".hero-slide"));
+    const hDots       = Array.from(document.querySelectorAll(".hero-dot"));
+    const hPrev       = document.getElementById("heroPrev");
+    const hNext       = document.getElementById("heroNext");
+    const hProgressEl = document.getElementById("heroProgress");
+
+    let hIdx = 0;
+    let hTimer = null;
+
+    function runProgress() {
+      if (!hProgressEl || hSlides.length <= 1) return;
+      hProgressEl.style.transition = "none";
+      hProgressEl.style.width = "0%";
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          hProgressEl.style.transition = `width ${HERO_DURATION}ms linear`;
+          hProgressEl.style.width = "100%";
+        });
+      });
+    }
+    function stopProgress() {
+      if (!hProgressEl) return;
+      hProgressEl.style.transition = "none";
+      hProgressEl.style.width = "0%";
+    }
+
+    function setHeroActive(idx) {
+      if (!hSlides.length) return;
+      const n = hSlides.length;
+      const next = ((idx % n) + n) % n;
+      const prev = hIdx;
+
+      hSlides.forEach((s, i) => {
+        s.classList.remove("is-active", "is-leaving");
+        if (i === next) {
+          s.classList.add("is-active");
+        } else if (i === prev && prev !== next) {
+          s.classList.add("is-leaving");
+          setTimeout(() => s.classList.remove("is-leaving"), 500);
+        }
+      });
+
+      hDots.forEach((d, i) => d.classList.toggle("is-active", i === next));
+      hIdx = next;
+    }
+
+    function nextHero() { setHeroActive(hIdx + 1); }
+    function prevHero() { setHeroActive(hIdx - 1); }
+
+    function startHeroAuto() {
+      if (hTimer || hSlides.length <= 1) return;
+      runProgress();
+      hTimer = setInterval(() => { nextHero(); runProgress(); }, HERO_DURATION);
+    }
+    function stopHeroAuto() {
+      if (hTimer) { clearInterval(hTimer); hTimer = null; }
+      stopProgress();
+    }
+
+    if (hSlides.length) {
+      setHeroActive(0);
+      startHeroAuto();
+
+      if (hPrev) hPrev.addEventListener("click", () => { stopHeroAuto(); prevHero(); startHeroAuto(); });
+      if (hNext) hNext.addEventListener("click", () => { stopHeroAuto(); nextHero(); startHeroAuto(); });
+
+      hDots.forEach((d) => {
+        d.addEventListener("click", () => {
+          const i = parseInt(d.dataset.index, 10) || 0;
+          stopHeroAuto(); setHeroActive(i); startHeroAuto();
+        });
+      });
+
+      if (heroEl) {
+        heroEl.addEventListener("mouseenter", stopHeroAuto);
+        heroEl.addEventListener("mouseleave", startHeroAuto);
+
+        let tStart = 0;
+        heroEl.addEventListener("touchstart", (e) => {
+          tStart = e.changedTouches[0].screenX;
+        }, { passive: true });
+        heroEl.addEventListener("touchend", (e) => {
+          const delta = e.changedTouches[0].screenX - tStart;
+          if (Math.abs(delta) > 50) {
+            stopHeroAuto();
+            delta < 0 ? nextHero() : prevHero();
+            startHeroAuto();
+          }
+        }, { passive: true });
+      }
+    }
+
+    // ==========================
+    // Team photo lightbox
+    // ==========================
+    const lightbox    = document.getElementById("photoLightbox");
+    const lightboxImg = document.getElementById("photoLightboxImg");
+    const lightboxBtn = lightbox && lightbox.querySelector(".photo-lightbox__close");
+
+    function openLightbox(src, alt) {
+      if (!lightbox) return;
+      lightboxImg.src = src;
+      lightboxImg.alt = alt || "";
+      lightbox.hidden = false;
+      document.body.style.overflow = "hidden";
+    }
+    function closeLightbox() {
+      if (!lightbox) return;
+      lightbox.hidden = true;
+      lightboxImg.src = "";
+      document.body.style.overflow = "";
+    }
+
+    document.querySelectorAll(".hsc-team-photo-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const src = btn.dataset.src || "";
+        const alt = btn.querySelector("img")?.alt || "";
+        openLightbox(src, alt);
+      });
+    });
+
+    if (lightboxBtn) lightboxBtn.addEventListener("click", closeLightbox);
+    if (lightbox) lightbox.addEventListener("click", (e) => { if (e.target === lightbox) closeLightbox(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && lightbox && !lightbox.hidden) closeLightbox(); });
+
+  });
+</script>
+
+
+
+
+
+

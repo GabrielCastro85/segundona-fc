@@ -1,0 +1,585 @@
+<section class="space-y-6 max-w-3xl mx-auto animate-fadeIn">
+  <style>
+    .vote-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .vote-meta #vote-progress {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.36rem 0.8rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.04);
+      color: #f5f5f5;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    }
+    .vote-meta span:last-child {
+      letter-spacing: 0.04em;
+    }
+    .vote-carousel {
+      position: relative;
+    }
+    .vote-carousel__viewport {
+      position: relative;
+      overflow: hidden;
+      padding: 10px 0 14px;
+      isolation: isolate;
+    }
+    .vote-carousel__viewport::before,
+    .vote-carousel__viewport::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 52px;
+      pointer-events: none;
+      z-index: 4;
+    }
+    .vote-carousel__viewport::before {
+      left: 0;
+      background: linear-gradient(90deg, rgba(16, 3, 8, 0.82), rgba(16, 3, 8, 0.34), rgba(16, 3, 8, 0));
+    }
+    .vote-carousel__viewport::after {
+      right: 0;
+      background: linear-gradient(270deg, rgba(16, 3, 8, 0.82), rgba(16, 3, 8, 0.34), rgba(16, 3, 8, 0));
+    }
+    .vote-card {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      width: calc(100% - 4.5rem);
+      max-width: 640px;
+      box-sizing: border-box;
+      background:
+        radial-gradient(circle at top left, var(--vote-team-soft, rgba(255, 122, 26, 0.11)), transparent 30%),
+        linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015)),
+        rgba(255,255,255,0.035);
+      border: 1px solid var(--vote-team-border, rgba(255,255,255,0.08));
+      border-radius: 18px;
+      padding: 16px;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transform: translateX(calc(-50% + 110%)) scale(0.88);
+      clip-path: inset(0 round 18px);
+      transform-origin: center center;
+      transition:
+        transform 0.42s ease,
+        opacity 0.32s ease,
+        filter 0.32s ease,
+        box-shadow 0.32s ease,
+        border-color 0.32s ease,
+        clip-path 0.32s ease;
+      will-change: transform, opacity;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+      backdrop-filter: blur(8px);
+    }
+    .vote-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(150deg, rgba(255,255,255,0.045), transparent 36%);
+      pointer-events: none;
+    }
+    .vote-card.is-active {
+      transform: translateX(-50%) scale(1);
+      opacity: 1;
+      visibility: visible;
+      z-index: 3;
+      pointer-events: auto;
+      clip-path: inset(0 round 18px);
+      border-color: var(--vote-team-border, rgba(255, 122, 26, 0.42));
+      box-shadow:
+        0 18px 36px rgba(0, 0, 0, 0.22),
+        0 0 0 1px rgba(255, 122, 26, 0.05);
+    }
+    .vote-card.is-prev,
+    .vote-card.is-next {
+      opacity: 0.32;
+      visibility: visible;
+      z-index: 2;
+      pointer-events: none;
+      filter: blur(0.2px) saturate(0.72);
+    }
+    .vote-card.is-prev {
+      transform: translateX(calc(-50% - 84%)) scale(0.95);
+      clip-path: inset(0 0 0 76% round 18px);
+    }
+    .vote-card.is-next {
+      transform: translateX(calc(-50% + 84%)) scale(0.95);
+      clip-path: inset(0 76% 0 0 round 18px);
+    }
+    .vote-card.is-before,
+    .vote-card.is-after {
+      opacity: 0;
+      z-index: 1;
+      pointer-events: none;
+      visibility: hidden;
+    }
+    .vote-card.is-before {
+      transform: translateX(calc(-50% - 110%)) scale(0.88);
+    }
+    .vote-card.is-after {
+      transform: translateX(calc(-50% + 110%)) scale(0.88);
+    }
+    .vote-card > .flex:first-child,
+    .vote-card > .grid,
+    .vote-card > .rating-row {
+      position: relative;
+      z-index: 1;
+    }
+    .vote-card > .flex:first-child img {
+      box-shadow:
+        0 12px 24px rgba(0, 0, 0, 0.28),
+        0 0 0 4px var(--vote-team-soft, rgba(255, 122, 26, 0.05));
+    }
+    .vote-team-pill {
+      align-items: center;
+      border: 1px solid var(--vote-team-border, rgba(255, 122, 26, 0.35));
+      border-radius: 999px;
+      color: #f8fafc;
+      display: inline-flex;
+      font-size: 0.68rem;
+      font-weight: 800;
+      gap: 0.42rem;
+      letter-spacing: 0.08em;
+      padding: 0.28rem 0.62rem;
+      text-transform: uppercase;
+      width: fit-content;
+    }
+    .vote-team-pill::before {
+      background: var(--vote-team-dot, #ff7a1a);
+      border-radius: 999px;
+      content: "";
+      height: 0.55rem;
+      width: 0.55rem;
+      box-shadow: 0 0 0 3px var(--vote-team-soft, rgba(255, 122, 26, 0.14));
+    }
+    .vote-card > .flex:first-child .font-semibold {
+      color: #fff7f2;
+      letter-spacing: -0.01em;
+    }
+    .vote-card > .grid {
+      gap: 0.7rem;
+    }
+    .vote-card > .grid > div {
+      border-color: rgba(148, 163, 184, 0.24);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.035), rgba(0,0,0,0.22)),
+        rgba(0, 0, 0, 0.22);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+    .vote-card > .grid > div p:first-child {
+      font-size: 0.98rem;
+      line-height: 1.1;
+    }
+    .vote-card > .grid > div p:last-child {
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 0.62rem;
+    }
+    .rating-pill span {
+      min-width: 38px;
+      min-height: 38px;
+      background: rgba(255, 255, 255, 0.025);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+      transition:
+        transform 0.18s ease,
+        border-color 0.18s ease,
+        background 0.18s ease,
+        box-shadow 0.18s ease;
+    }
+    .rating-pill:hover span {
+      transform: translateY(-1px);
+      border-color: rgba(255, 122, 26, 0.48);
+      box-shadow: 0 10px 18px rgba(0, 0, 0, 0.16);
+    }
+    .rating-pill input:checked + span {
+      background: linear-gradient(180deg, #ff983d, #ff7a1a);
+      color: #0b0b0b;
+      border-color: #ff7a1a;
+      box-shadow:
+        0 10px 18px rgba(255,122,26,0.22),
+        inset 0 1px 0 rgba(255,255,255,0.2);
+    }
+    .rating-row {
+      justify-content: center;
+      gap: 0.55rem;
+    }
+    .vote-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.9rem;
+      padding-top: 0.25rem;
+    }
+    #vote-prev,
+    #vote-next,
+    #vote-submit {
+      min-width: 110px;
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18);
+    }
+    #vote-prev {
+      background: rgba(255, 255, 255, 0.02);
+    }
+    #vote-next,
+    #vote-submit {
+      box-shadow: 0 14px 28px rgba(255, 122, 26, 0.24);
+    }
+    .vote-sabotage-card {
+      position: relative;
+      overflow: hidden;
+      border-radius: 24px;
+      border: 1px solid rgba(239, 68, 68, 0.28);
+      background:
+        radial-gradient(circle at top right, rgba(239, 68, 68, 0.16), transparent 28%),
+        radial-gradient(circle at bottom left, rgba(255, 122, 26, 0.12), transparent 30%),
+        linear-gradient(180deg, rgba(30, 10, 14, 0.96), rgba(16, 6, 10, 0.98));
+      box-shadow:
+        0 18px 34px rgba(0, 0, 0, 0.24),
+        inset 0 1px 0 rgba(255, 255, 255, 0.03);
+      padding: 1.25rem;
+    }
+    .vote-sabotage-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.05), transparent 35%);
+      pointer-events: none;
+    }
+    .vote-sabotage-card__wrap {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      gap: 1rem;
+    }
+    .vote-sabotage-card__media img {
+      width: 100%;
+      max-width: 420px;
+      height: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.28));
+    }
+    .vote-sabotage-card__eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.36rem 0.8rem;
+      border-radius: 999px;
+      border: 1px solid rgba(239, 68, 68, 0.28);
+      background: rgba(239, 68, 68, 0.12);
+      color: rgba(254, 202, 202, 0.96);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .vote-sabotage-card__title {
+      font-family: var(--font-title, inherit);
+      font-size: clamp(2rem, 5vw, 3.1rem);
+      line-height: 0.94;
+      letter-spacing: -0.03em;
+      color: #fff4f1;
+    }
+    @media (max-width: 640px) {
+      .vote-meta {
+        align-items: stretch;
+      }
+      .vote-meta #vote-progress,
+      .vote-meta span:last-child {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+      }
+      .vote-carousel__viewport::before,
+      .vote-carousel__viewport::after {
+        width: 18px;
+      }
+      .vote-card {
+        width: calc(100% - 2.5rem);
+      }
+      .vote-card.is-prev {
+        transform: translateX(calc(-50% - 74%)) scale(0.97);
+        clip-path: inset(0 0 0 82% round 18px);
+      }
+      .vote-card.is-next {
+        transform: translateX(calc(-50% + 74%)) scale(0.97);
+        clip-path: inset(0 82% 0 0 round 18px);
+      }
+      .vote-nav {
+        flex-wrap: wrap;
+      }
+      .vote-nav > * {
+        width: 100%;
+      }
+      .vote-nav > div {
+        display: flex;
+        width: 100%;
+      }
+      .vote-nav > div > * {
+        flex: 1;
+      }
+      .vote-sabotage-card__wrap {
+        grid-template-columns: 1fr;
+        text-align: center;
+      }
+      .vote-sabotage-card__eyebrow {
+        justify-content: center;
+      }
+      .vote-sabotage-card__media img {
+        max-width: 280px;
+      }
+    }
+  </style>
+
+  <header class="text-center space-y-2">
+    <h1 class="font-title text-3xl text-horriver-light">Vota&ccedil;&atilde;o da pelada</h1>
+    <% if (match) { %>
+      <p class="text-sm text-horriver-gray">
+        Pelada de <span class="text-horriver-orange"><%= new Date(match.playedAt).toLocaleDateString("pt-BR", { timeZone: 'America/Sao_Paulo' }) %></span>
+        <% if (match.description) { %> - <%= match.description %> <% } %>
+      </p>
+    <% } %>
+    <% if (voter) { %>
+      <p class="text-xs text-horriver-gray">
+        Link gerado para: <span class="text-horriver-light"><%= voter.name %></span>
+      </p>
+      <p class="text-[11px] text-horriver-gray">
+        Voc&ecirc; n&atilde;o pode votar em si mesmo.
+      </p>
+    <% } %>
+  </header>
+
+  <% if (error) { %>
+    <div class="bg-red-900/40 border border-red-600/60 text-red-100 rounded-2xl p-4 text-sm">
+      <%= error %>
+    </div>
+  <% } %>
+
+  <% if (success) { %>
+    <% if (voteSabotageAlert && voteSabotageAlert.show) { %>
+      <div class="vote-sabotage-card">
+        <div class="vote-sabotage-card__wrap">
+          <div>
+            <span class="vote-sabotage-card__eyebrow">👀</span>
+            <h2 class="vote-sabotage-card__title"><%= voteSabotageAlert.title %></h2>
+          </div>
+          <div class="vote-sabotage-card__media">
+            <img src="<%= voteSabotageAlert.imageSrc %>" alt="Alerta de voto suspeito" />
+          </div>
+        </div>
+      </div>
+    <% } else { %>
+      <div class="bg-emerald-900/40 border border-emerald-600/60 text-emerald-100 rounded-2xl p-4 text-sm">
+        Voto registrado com sucesso. Obrigado!
+      </div>
+    <% } %>
+  <% } %>
+
+  <% if (!error && !success) { %>
+    <form method="POST" class="space-y-4" id="vote-flow-form">
+      <div class="vote-meta text-xs text-horriver-gray">
+        <span id="vote-progress">Jogador 1 de <%= players.length %></span>
+        <span>Notas de 1 a 5 (obrigat&oacute;rio)</span>
+      </div>
+
+      <div id="vote-alert" class="hidden text-xs text-red-300 bg-red-900/30 border border-red-700/40 rounded-lg px-3 py-2"></div>
+
+      <div class="vote-carousel">
+        <div class="vote-carousel__viewport" id="vote-carousel-viewport">
+        <% players.forEach((p, idx) => {
+             const theme = p.teamTheme || {};
+        %>
+          <div
+            class="vote-card"
+            data-vote-card
+            data-index="<%= idx %>"
+            data-team-name="<%= p.teamName || '' %>"
+            style="--vote-team-dot:<%= theme.dot || '#ff7a1a' %>; --vote-team-soft:<%= theme.soft || 'rgba(255, 122, 26, 0.14)' %>; --vote-team-border:<%= theme.border || 'rgba(255, 122, 26, 0.42)' %>;"
+          >
+            <div class="flex items-center gap-4">
+              <img
+                src="<%= p.photoUrl || '/img/logo-64x64.svg' %>"
+                alt="<%= p.name %>"
+                class="w-16 h-16 rounded-full object-cover bg-horriver-dark"
+                style="border:1px solid var(--vote-team-border);"
+              />
+              <div class="min-w-0">
+                <% if (p.teamName) { %>
+                  <span class="vote-team-pill"><%= p.teamName %></span>
+                <% } %>
+                <p class="text-horriver-light font-semibold text-lg truncate"><%= p.name %></p>
+                <% if (p.nickname) { %>
+                  <p class="text-[11px] text-horriver-gray">"<%= p.nickname %>"</p>
+                <% } %>
+                <p class="text-[11px] text-horriver-gray">
+                  Posi&ccedil;&atilde;o: <span class="text-horriver-light"><%= p.positionLabel || p.position || "Outros" %></span>
+                </p>
+              </div>
+            </div>
+
+            <% const isGoalkeeperCard = String(p.position || p.positionLabel || "").toLowerCase().includes("gol"); %>
+            <div class="mt-4 grid <%= isGoalkeeperCard ? 'grid-cols-4' : 'grid-cols-3' %> gap-2 text-[11px] text-horriver-gray">
+              <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
+                <p class="text-horriver-orange font-semibold"><%= p.goals || 0 %></p>
+                <p>Gols</p>
+              </div>
+              <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
+                <p class="text-horriver-orange font-semibold"><%= p.assists || 0 %></p>
+                <p>Assist.</p>
+              </div>
+              <% if (isGoalkeeperCard) { %>
+                <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
+                  <p class="text-horriver-orange font-semibold"><%= p.saves != null ? p.saves : "-" %></p>
+                  <p>Defesas</p>
+                </div>
+              <% } %>
+              <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
+                <p class="text-horriver-orange font-semibold"><%= p.appearedInPhoto ? "Sim" : "Não" %></p>
+                <p>Foto</p>
+              </div>
+            </div>
+
+            <div class="mt-4 flex items-center gap-2 rating-row">
+              <% for (let r = 1; r <= 5; r++) { %>
+                <label class="rating-pill">
+                  <input type="radio" name="rating_<%= p.id %>" value="<%= r %>" class="hidden" />
+                  <span class="inline-flex items-center justify-center w-9 h-9 rounded-full border border-horriver-border text-horriver-light text-sm font-semibold hover:border-horriver-orange transition leading-none">
+                    <%= r %>
+                  </span>
+                </label>
+              <% } %>
+            </div>
+          </div>
+        <% }) %>
+        </div>
+      </div>
+
+      <div class="vote-nav">
+        <button
+          type="button"
+          id="vote-prev"
+          class="px-4 py-2 rounded-full border border-horriver-border text-horriver-gray text-sm hover:border-horriver-orange hover:text-horriver-orange transition disabled:opacity-40"
+          disabled
+        >
+          Anterior
+        </button>
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            id="vote-next"
+            class="px-4 py-2 rounded-full bg-horriver-orange text-black text-sm font-semibold hover:bg-orange-500 transition"
+          >
+            Pr&oacute;ximo
+          </button>
+          <button
+            type="submit"
+            id="vote-submit"
+            class="hidden px-4 py-2 rounded-full bg-horriver-orange text-black text-sm font-semibold hover:bg-orange-500 transition"
+          >
+            Enviar votos
+          </button>
+        </div>
+      </div>
+    </form>
+  <% } %>
+</section>
+
+<script>
+  (() => {
+    const cards = Array.from(document.querySelectorAll("[data-vote-card]"));
+    const viewport = document.getElementById("vote-carousel-viewport");
+    const alertBox = document.getElementById("vote-alert");
+    const progress = document.getElementById("vote-progress");
+    const prevBtn = document.getElementById("vote-prev");
+    const nextBtn = document.getElementById("vote-next");
+    const submitBtn = document.getElementById("vote-submit");
+    const form = document.getElementById("vote-flow-form");
+    if (!cards.length || !form || !viewport) return;
+
+    let index = 0;
+    const stateClasses = ["is-before", "is-prev", "is-active", "is-next", "is-after"];
+
+    const syncViewportHeight = () => {
+      const tallest = cards.reduce((maxHeight, card) => {
+        return Math.max(maxHeight, card.scrollHeight);
+      }, 0);
+      viewport.style.height = `${tallest + 6}px`;
+    };
+
+    const showCard = (idx) => {
+      cards.forEach((card, i) => {
+        const offset = i - idx;
+        const state =
+          offset < -1 ? "is-before" :
+          offset === -1 ? "is-prev" :
+          offset === 0 ? "is-active" :
+          offset === 1 ? "is-next" :
+          "is-after";
+        card.classList.remove(...stateClasses);
+        card.classList.add(state);
+        card.setAttribute("aria-hidden", offset === 0 ? "false" : "true");
+        card.querySelectorAll('input[type="radio"]').forEach((input) => {
+          input.tabIndex = offset === 0 ? 0 : -1;
+        });
+      });
+      const teamName = cards[idx]?.dataset?.teamName;
+      progress.textContent = teamName ? `${teamName} - Jogador ${idx + 1} de ${cards.length}` : `Jogador ${idx + 1} de ${cards.length}`;
+      prevBtn.disabled = idx === 0;
+      nextBtn.classList.toggle("hidden", idx === cards.length - 1);
+      submitBtn.classList.toggle("hidden", idx !== cards.length - 1);
+      if (alertBox) {
+        alertBox.classList.add("hidden");
+        alertBox.textContent = "";
+      }
+      syncViewportHeight();
+    };
+
+    const currentHasRating = () => {
+      const current = cards[index];
+      if (!current) return false;
+      return !!current.querySelector('input[type="radio"]:checked');
+    };
+
+    const ensureAllRated = () => {
+      return cards.every((card) => !!card.querySelector('input[type="radio"]:checked'));
+    };
+
+    nextBtn.addEventListener("click", () => {
+      if (!currentHasRating()) {
+        alertBox.textContent = "Selecione uma nota de 1 a 5 para continuar.";
+        alertBox.classList.remove("hidden");
+        return;
+      }
+      index = Math.min(index + 1, cards.length - 1);
+      showCard(index);
+    });
+
+    prevBtn.addEventListener("click", () => {
+      index = Math.max(index - 1, 0);
+      showCard(index);
+    });
+
+    form.addEventListener("submit", (e) => {
+      if (!ensureAllRated()) {
+        e.preventDefault();
+        alertBox.textContent = "Preencha todas as notas antes de enviar.";
+        alertBox.classList.remove("hidden");
+      }
+    });
+
+    window.addEventListener("resize", syncViewportHeight);
+    window.addEventListener("load", syncViewportHeight);
+    showCard(index);
+  })();
+</script>

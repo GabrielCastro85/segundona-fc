@@ -1,0 +1,227 @@
+<%
+  const currentFinanceView =
+    (typeof financeView !== "undefined" && financeView) || locals.financeView;
+  const {
+    filters,
+    summaries: summary,
+    ui,
+    actions,
+    helpers,
+  } = currentFinanceView;
+  const activeTab = currentFinanceView.page.activeTab;
+  const financeTabs = currentFinanceView.navigation.tabs || [];
+  const monthOptions = currentFinanceView.navigation.monthOptions;
+  const yearOptions = currentFinanceView.navigation.yearOptions;
+  const { noticeText, errorText, monthReferenceLabel, activeTabMeta } = ui;
+  const { stateFields, buildFinanceQuery } = actions;
+  const { formatCurrencyBR } = helpers;
+  const adminHandleRaw =
+    typeof admin !== "undefined" && admin && admin.email
+      ? String(admin.email).split("@")[0]
+      : "Admin";
+  const adminHandle = adminHandleRaw
+    ? adminHandleRaw.charAt(0).toUpperCase() + adminHandleRaw.slice(1)
+    : "Admin";
+  const receivedPercentage = Math.min(Math.round(summary.receivedPercentage || 0), 100);
+  const tabHeroMap = {
+    overview: {
+      kicker: "Resumo financeiro",
+      title: "Visão geral do financeiro.",
+      description: "Acompanhe caixa, pendências, recebimento do mês e alertas principais em um único painel.",
+      action: "Dashboard da competência",
+    },
+    monthly: {
+      kicker: "Mensalidades",
+      title: "Mensalidades da competência.",
+      description: "Edite planos, acompanhe pagamentos e mantenha as cobranças do mês organizadas jogador por jogador.",
+      action: "Controle de pagamentos",
+    },
+    charge: {
+      kicker: "Cobrança",
+      title: "Fila de cobrança.",
+      description: "Veja quem ainda precisa de ação, copie mensagens e resolva pendências sem procurar em outras telas.",
+      action: "Pendências e mensagens",
+    },
+    cash: {
+      kicker: "Caixa",
+      title: "Extrato do caixa.",
+      description: "Registre entradas e saídas, revise lançamentos manuais e acompanhe o saldo consolidado do período.",
+      action: "Movimentações do período",
+    },
+    guests: {
+      kicker: "Convidados",
+      title: "Pagamentos avulsos.",
+      description: "Controle convidados, valores pagos por presença e entradas que também alimentam o caixa.",
+      action: "Avulsos integrados",
+    },
+    reports: {
+      kicker: "Relatórios",
+      title: "Prestação de contas.",
+      description: "Gere resumos, PDFs e leituras executivas para fechar o período com clareza.",
+      action: "Exportações e histórico",
+    },
+    settings: {
+      kicker: "Configurações",
+      title: "Regras do financeiro.",
+      description: "Ajuste Pix, valores padrão, elegibilidade e regras individuais dos jogadores.",
+      action: "Regras e participantes",
+    },
+  };
+  const activeHero = tabHeroMap[activeTab] || tabHeroMap.overview;
+  const quickMenuMeta = {
+    overview: { short: "VG", helper: "Resumo do módulo" },
+    monthly: { short: "MS", helper: "Controle do mês" },
+    charge: { short: "CB", helper: "Fila de cobrança" },
+    cash: { short: "CX", helper: "Extrato e caixa" },
+    guests: { short: "GV", helper: "Avulsos do período" },
+    reports: { short: "RL", helper: "Prestação de contas" },
+    settings: { short: "CFG", helper: "Regras e Pix" },
+  };
+%>
+
+<header class="finance-dashboard-header">
+  <section class="finance-dashboard-hero finance-dashboard-hero--<%= activeTab %>">
+    <div class="finance-dashboard-hero__brand">
+      <div class="finance-dashboard-hero__crest" aria-hidden="true">
+        <img src="<%= brand.logoSmall || '/img/logo-64x64.svg' %>" alt="<%= brand.name || 'Nome da Pelada' %>" />
+      </div>
+
+      <div class="finance-dashboard-hero__copy">
+        <div class="space-y-2">
+          <p class="finance-dashboard-hero__eyebrow">
+            Olá, <strong class="text-horriver-light"><%= adminHandle %></strong>. Você está em <strong class="text-horriver-orange"><%= activeTabMeta.label %></strong>.
+          </p>
+          <div class="finance-dashboard-hero__section-pill">
+            <span><%= activeHero.kicker %></span>
+            <strong><%= activeHero.action %></strong>
+          </div>
+          <h1 class="font-title finance-dashboard-hero__title">
+            <%= activeHero.title %>
+          </h1>
+          <p class="finance-dashboard-hero__description">
+            <%= activeHero.description %>
+          </p>
+        </div>
+
+        <div class="finance-dashboard-hero__badges">
+          <span class="finance-chip finance-chip--accent"><%= monthReferenceLabel %></span>
+          <span class="finance-chip"><%= summary.payersCount %> pagante(s)</span>
+          <span class="finance-chip"><%= summary.delinquentCount %> pendente(s)</span>
+          <span class="finance-chip"><%= formatCurrencyBR(summary.cashBalance) %> em caixa</span>
+        </div>
+      </div>
+    </div>
+
+    <aside class="finance-dashboard-hero__aside">
+      <div class="finance-dashboard-quickmenu">
+        <div class="finance-dashboard-quickmenu__head">
+          <div class="space-y-1">
+            <div class="finance-kicker">Menu rápido</div>
+            <p class="text-sm font-semibold text-horriver-light">Troque de área sem perder a competência</p>
+          </div>
+          <span class="finance-chip finance-chip--accent"><%= activeTabMeta.label %></span>
+        </div>
+
+        <div class="finance-dashboard-quickmenu__grid">
+          <% financeTabs.forEach((tab) => { const tabMeta = quickMenuMeta[tab.key] || { short: tab.label.slice(0, 2).toUpperCase(), helper: tab.description }; %>
+            <a href="<%= tab.href %>" class="finance-dashboard-quickmenu__item finance-dashboard-quickmenu__item--<%= tab.key %> <%= tab.active ? 'finance-dashboard-quickmenu__item--active' : '' %>">
+              <span class="finance-dashboard-quickmenu__icon"><%= tabMeta.short %></span>
+              <span class="finance-dashboard-quickmenu__content">
+                <span class="finance-dashboard-quickmenu__label"><%= tab.label %></span>
+                <span class="finance-dashboard-quickmenu__meta"><%= tab.badge || tabMeta.helper %></span>
+              </span>
+            </a>
+          <% }) %>
+        </div>
+      </div>
+    </aside>
+  </section>
+
+  <% if (noticeText) { %><div class="finance-alert finance-alert--ok"><%= noticeText %></div><% } %>
+  <% if (errorText) { %><div class="finance-alert finance-alert--error"><%= errorText %></div><% } %>
+
+  <section class="finance-panel finance-panel--muted p-4 md:p-5">
+    <div class="finance-dashboard-toolbar">
+      <div class="finance-dashboard-toolbar__summary">
+        <article class="finance-dashboard-toolbar__metric finance-dashboard-toolbar__metric--cash">
+          <span class="finance-kicker">Caixa atual</span>
+          <strong class="text-horriver-light"><%= formatCurrencyBR(summary.cashBalance) %></strong>
+          <span class="finance-subtle">Saldo consolidado do módulo.</span>
+        </article>
+
+        <article class="finance-dashboard-toolbar__metric">
+          <span class="finance-kicker">Pendente</span>
+          <strong class="text-horriver-light"><%= summary.delinquentCount %></strong>
+          <span class="finance-subtle">Participantes que ainda exigem ação.</span>
+        </article>
+
+        <article class="finance-dashboard-toolbar__metric">
+          <span class="finance-kicker">Receita do mês</span>
+          <strong class="text-horriver-light"><%= formatCurrencyBR(summary.totalReceivedMonth) %></strong>
+          <span class="finance-subtle">Entradas registradas no recorte atual.</span>
+        </article>
+      </div>
+
+      <div class="finance-dashboard-filters">
+        <div class="finance-dashboard-filters__status">
+          <div class="min-w-0">
+            <div class="finance-kicker">Competência ativa</div>
+            <div class="finance-dashboard-filters__status-value"><%= monthReferenceLabel %></div>
+            <p class="finance-subtle"><%= activeTabMeta.description %></p>
+          </div>
+
+          <div class="space-y-2">
+            <div class="flex items-center justify-between gap-3 text-xs text-horriver-gray/76">
+              <span>Recebimento da competência</span>
+              <strong class="text-horriver-light"><%= receivedPercentage %>%</strong>
+            </div>
+            <div class="finance-progress"><span style="width:<%= receivedPercentage %>%"></span></div>
+          </div>
+
+          <div class="finance-dashboard-hero__aside-stats">
+            <div class="finance-dashboard-mini-stat">
+              <span>Pagos</span>
+              <strong><%= summary.paidCount %></strong>
+            </div>
+            <div class="finance-dashboard-mini-stat">
+              <span>Parciais</span>
+              <strong><%= summary.partialCount %></strong>
+            </div>
+            <div class="finance-dashboard-mini-stat">
+              <span>Atrasados</span>
+              <strong><%= summary.overdueCount %></strong>
+            </div>
+          </div>
+        </div>
+
+        <form method="GET" action="/admin/finance" class="finance-dashboard-filters__form">
+          <%- stateFields({ tab: activeTab }, { omit: ["month", "year"] }) %>
+
+          <div class="finance-dashboard-filters__grid">
+            <label class="finance-label">Mês
+              <select name="month" class="finance-select">
+                <% monthOptions.forEach((option) => { %>
+                  <option value="<%= option.value %>" <%= Number(option.value) === Number(filters.month) ? "selected" : "" %>><%= option.label %></option>
+                <% }) %>
+              </select>
+            </label>
+
+            <label class="finance-label">Ano
+              <select name="year" class="finance-select">
+                <% yearOptions.forEach((year) => { %>
+                  <option value="<%= year %>" <%= Number(year) === Number(filters.year) ? "selected" : "" %>><%= year %></option>
+                <% }) %>
+              </select>
+            </label>
+          </div>
+
+          <div class="finance-dashboard-filters__actions">
+            <button type="submit" class="finance-cta">Atualizar competência</button>
+            <a href="<%= buildFinanceQuery({ tab: activeTab, status: 'ALL', search: '', cashType: 'ALL', chargeFilter: 'ALL', reportType: 'FULL', reportScope: 'MONTHLY', reportStart: '', reportEnd: '' }) %>" class="finance-soft-button">Limpar filtros</a>
+            <a href="/admin" class="finance-soft-button">Voltar ao painel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+</header>

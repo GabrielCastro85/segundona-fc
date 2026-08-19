@@ -1,0 +1,628 @@
+// routes/rankings.js
+const express = require("express");
+const router = express.Router();
+const prisma = require("../utils/db");
+const { resolveOverallScore } = require("../utils/overall");
+const { computeMatchRatingsAndAwards } = require("../utils/match_ratings");
+
+const cache = new Map();
+const CACHE_TTL_MS = 60 * 1000;
+const RANKINGS_RATING_CONCURRENCY = 6;
+
+function getCache(key) {
+  const entry = cache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
+    cache.delete(key);
+    return null;
+  }
+  return entry.value;
+}
+
+function setCache(key, value) {
+  cache.set(key, { value, timestamp: Date.now() });
+}
+
+function getSaoPauloMonthYear(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(date);
+  const year = Number(parts.find((part) => part.type === "year")?.value);
+  const month = Number(parts.find((part) => part.type === "month")?.value);
+  return { year, month };
+}
+
+function getMonthRangeSaoPaulo(year, month) {
+  const from = new Date(Date.UTC(year, month - 1, 1, 3, 0, 0, 0));
+  const to = new Date(Date.UTC(year, month, 1, 3, 0, 0, 0));
+  return { from, to };
+}
+
+function getYearRangeSaoPaulo(year) {
+  const from = new Date(Date.UTC(year, 0, 1, 3, 0, 0, 0));
+  const to = new Date(Date.UTC(year + 1, 0, 1, 3, 0, 0, 0));
+  return { from, to };
+}
+
+async function mapWithConcurrency(items, limit, mapper) {
+  if (!items.length) return [];
+
+  const results = new Array(items.length);
+  let nextIndex = 0;
+
+  const worker = async () => {
+    while (true) {
+      const currentIndex = nextIndex++;
+      if (currentIndex >= items.length) break;
+      results[currentIndex] = await mapper(items[currentIndex], currentIndex);
+    }
+  };
+
+  const workerCount = Math.min(limit, items.length);
+  await Promise.all(Array.from({ length: workerCount }, worker));
+  return results;
+}
+
+
+// Calcula o intervalo de datas com base em year/month
+function getDateRange(year, month) {
+  // "Todos os anos" => sem filtro de data
+  if (year === "all") {
+    return { from: null, to: null };
+  }
+
+  const y = parseInt(year, 10);
+  const m = parseInt(month, 10);
+
+  if (Number.isNaN(y)) {
+    return { from: null, to: null };
+  }
+
+  // Se tiver m+–s v+–lido, filtra aquele m+–s
+  if (!Number.isNaN(m) && m > 0 && m <= 12) {
+    return getMonthRangeSaoPaulo(y, m);
+  }
+
+  // Sen+–o, filtra o ano inteiro
+  return getYearRangeSaoPaulo(y);
+}
+
+router.get("/", async (req, res) => {
+  try {
+    const { year: currentYear } = getSaoPauloMonthYear();
+
+    let { year, month, position } = req.query;
+
+    // Defaults ––– ano atual como padr+–o se nada for enviado
+    if (!year) year = String(currentYear);
+    if (!month) month = "0"; // 0 = todos os meses
+    const selPosition = position && position !== "all" ? position : "all";
+
+    const cacheKey = `rankings:${year}:${month}:${selPosition}`;
+    const cached = getCache(cacheKey);
+    if (cached) {
+      return res.render("rankings", cached);
+    }
+
+    const { from, to } = getDateRange(year, month);
+
+    const playerWhere =
+      selPosition !== "all"
+        ? { position: selPosition }
+        : {};
+
+    const statsWhere = {};
+    if (from && to) {
+      statsWhere.match = {
+        playedAt: {
+          gte: from,
+          lt: to,
+        },
+      };
+    }
+
+    const players = await prisma.player.findMany({
+      where: playerWhere,
+      include: {
+        stats: {
+          where: statsWhere,
+          include: {
+            match: true,
+          },
+        },
+      },
+    });
+
+    const matchIds = new Set();
+    players.forEach((p) => {
+      (p.stats || []).forEach((s) => {
+        if (s.match && s.match.id) matchIds.add(s.match.id);
+      });
+    });
+
+    const finalRatingsByMatch = new Map();
+    const matchIdList = Array.from(matchIds);
+    const ratingRows = await mapWithConcurrency(
+      matchIdList,
+      RANKINGS_RATING_CONCURRENCY,
+      async (matchId) => {
+        try {
+          const result = await computeMatchRatingsAndAwards(matchId);
+          if (!result.error && result.scores && typeof result.scores.forEach === "function") {
+            const map = new Map();
+            result.scores.forEach((score) => {
+              map.set(score.player.id, score.finalRating);
+            });
+            return { matchId, map };
+          }
+        } catch (err) {
+          console.warn("Falha ao calcular notas finais no ranking:", err);
+        }
+        return null;
+      }
+    );
+    ratingRows.forEach((row) => {
+      if (row?.map) {
+        finalRatingsByMatch.set(row.matchId, row.map);
+      }
+    });
+
+    const getFinalRating = (stat) => {
+      const matchId = stat.match && stat.match.id;
+      if (!matchId) return stat.rating;
+      const map = finalRatingsByMatch.get(matchId);
+      if (map && map.has(stat.playerId)) return map.get(stat.playerId);
+      return stat.rating;
+    };
+
+    // Monta dados agregados por jogador
+    const entries = players.map((p) => {
+      let goals = 0;
+      let assists = 0;
+      let saves = 0;
+      let savesMatches = 0;
+      let matches = 0;
+      let photos = 0;
+      let ratingSum = 0;
+      let ratingCount = 0;
+
+      for (const s of p.stats) {
+        if (!s.present) continue;
+
+        goals += s.goals || 0;
+        assists += s.assists || 0;
+        if (s.saves != null) {
+          saves += s.saves || 0;
+          savesMatches++;
+        }
+        matches++;
+        if (s.appearedInPhoto) photos++;
+        const finalRating = getFinalRating(s);
+        if (finalRating != null) {
+          ratingSum += finalRating;
+          ratingCount++;
+        }
+      }
+
+      const rating = ratingCount > 0 ? ratingSum / ratingCount : 0;
+
+      return {
+        player: p,
+        goals,
+        assists,
+        saves,
+        savesMatches,
+        matches,
+        photos,
+        rating,
+      };
+    });
+
+    // ======= FORMA RECENTE (últimas 10 peladas gerais) =======
+    // Pega as 10 peladas mais recentes (dentro do filtro de data) e agrega nelas.
+    const allStats = players.flatMap((p) =>
+      (p.stats || []).map((s) => ({
+        ...s,
+        player: p,
+      }))
+    );
+
+    const matchesById = new Map();
+    for (const s of allStats) {
+      if (s.match && s.match.id && s.match.playedAt) {
+        matchesById.set(s.match.id, new Date(s.match.playedAt));
+      }
+    }
+    const latestMatchIds = Array.from(matchesById.entries())
+      .sort((a, b) => b[1].getTime() - a[1].getTime())
+      .slice(0, 10)
+      .map(([id]) => id);
+    const latestMatchSet = new Set(latestMatchIds);
+
+    const recentAggregates = players
+      .map((p) => {
+        const recentStats = (p.stats || []).filter(
+          (s) => s.match && latestMatchSet.has(s.match.id)
+        );
+
+        let goals = 0;
+        let assists = 0;
+        let saves = 0;
+        let savesMatches = 0;
+        let matches = 0;
+        let ratingSum = 0;
+        let ratingCount = 0;
+
+        for (const s of recentStats) {
+          if (!s.present) continue;
+
+          goals += s.goals || 0;
+          assists += s.assists || 0;
+          if (s.saves != null) {
+            saves += s.saves || 0;
+            savesMatches++;
+          }
+          matches++;
+          const finalRating = getFinalRating(s);
+          if (finalRating != null) {
+            ratingSum += finalRating;
+            ratingCount++;
+          }
+        }
+
+        const rating = ratingCount > 0 ? ratingSum / ratingCount : 0;
+
+        return {
+          player: p,
+          goals,
+          assists,
+          saves,
+          savesMatches,
+          matches,
+          rating,
+        };
+      })
+      .filter((e) => e.matches > 0 || e.goals > 0 || e.assists > 0);
+
+    const maxGoalsRecent = recentAggregates.reduce(
+      (max, e) => (e.goals > max ? e.goals : max),
+      0
+    );
+    const maxAssistsRecent = recentAggregates.reduce(
+      (max, e) => (e.assists > max ? e.assists : max),
+      0
+    );
+
+    // pesos: rating 5, gols 3, assist 2 (total 10)
+    const recentRanking = recentAggregates
+      .map((e) => {
+        const goalsNorm =
+          maxGoalsRecent > 0 ? (e.goals / maxGoalsRecent) * 10 : 0;
+        const assistsNorm =
+          maxAssistsRecent > 0 ? (e.assists / maxAssistsRecent) * 10 : 0;
+        const ratingNorm = e.rating || 0;
+
+        const recentScore =
+          (ratingNorm * 5 + goalsNorm * 3 + assistsNorm * 2) / 10;
+
+        return {
+          ...e,
+          recentScore,
+          goalsNorm,
+          assistsNorm,
+          ratingNorm,
+        };
+      })
+      .sort((a, b) => {
+        if (b.recentScore !== a.recentScore) {
+          return b.recentScore - a.recentScore;
+        }
+        if (b.rating !== a.rating) return b.rating - a.rating;
+        if (b.goals !== a.goals) return b.goals - a.goals;
+        return b.assists - a.assists;
+      });
+
+    // ======= M+–DIA PONDERADA (0–––10) =======
+    // Normaliza gols e assist+–ncias para 0–––10 com base no m+–ximo do per+–odo
+    const maxGoals = entries.reduce(
+      (max, e) => (e.goals > max ? e.goals : max),
+      0
+    );
+    const maxAssists = entries.reduce(
+      (max, e) => (e.assists > max ? e.assists : max),
+      0
+    );
+
+    // Pesos (G=4 / A=2 / N=4)
+    const weights = {
+      goals: 4,
+      assists: 2,
+      rating: 4,
+    };
+    const weightsSum = weights.goals + weights.assists + weights.rating;
+
+    const weightedRanking = entries
+      .map((e) => {
+        const golsNorm =
+          maxGoals > 0 ? (e.goals / maxGoals) * 10 : 0;
+        const assistsNorm =
+          maxAssists > 0 ? (e.assists / maxAssists) * 10 : 0;
+        const ratingNorm = e.rating || 0; // j+– est+– em 0–––10
+
+        const weightedScore =
+          weightsSum > 0
+            ? (golsNorm * weights.goals +
+                assistsNorm * weights.assists +
+                ratingNorm * weights.rating) /
+              weightsSum
+            : 0;
+
+        return {
+          ...e,
+          weightedScore,
+          golsNorm,
+          assistsNorm,
+          ratingNorm,
+        };
+      })
+      // pelo menos alguma participa+–+–o
+      .filter((e) => e.matches > 0 || e.goals > 0 || e.assists > 0)
+      .sort((a, b) => {
+        if (b.weightedScore !== a.weightedScore) {
+          return b.weightedScore - a.weightedScore;
+        }
+        // desempates: nota > gols > assist+–ncias
+        if (b.rating !== a.rating) return b.rating - a.rating;
+        if (b.goals !== a.goals) return b.goals - a.goals;
+        return b.assists - a.assists;
+      });
+
+    // ======= GOLS =======
+    const goalsRanking = [...entries]
+      .filter((e) => e.goals > 0 || e.assists > 0 || e.matches > 0)
+      .sort((a, b) => {
+        if (b.goals !== a.goals) return b.goals - a.goals;
+        if (b.assists !== a.assists) return b.assists - a.assists;
+        return b.matches - a.matches;
+      });
+
+    // ======= ASSIST+–NCIAS =======
+    const assistsRanking = [...entries]
+      .filter((e) => e.assists > 0 || e.goals > 0 || e.matches > 0)
+      .sort((a, b) => {
+        if (b.assists !== a.assists) return b.assists - a.assists;
+        if (b.goals !== a.goals) return b.goals - a.goals;
+        return b.matches - a.matches;
+      });
+
+    // ======= DEFESAS (goleiros, opcional por pelada) =======
+    const savesRanking = [...entries]
+      .filter((e) => e.savesMatches > 0)
+      .map((e) => ({
+        ...e,
+        savesAvg: e.savesMatches > 0 ? e.saves / e.savesMatches : 0,
+      }))
+      .sort((a, b) => {
+        if (b.saves !== a.saves) return b.saves - a.saves;
+        if (b.savesAvg !== a.savesAvg) return b.savesAvg - a.savesAvg;
+        return b.matches - a.matches;
+      });
+
+    // ======= GOLS + ASSIST+–NCIAS =======
+    const gaRanking = [...entries]
+      .map((e) => ({
+        ...e,
+        totalGA: (e.goals || 0) + (e.assists || 0),
+      }))
+      .filter((e) => e.totalGA > 0 || e.matches > 0)
+      .sort((a, b) => {
+        if (b.totalGA !== a.totalGA) return b.totalGA - a.totalGA;
+        return b.matches - a.matches;
+      });
+
+    // ======= NOTAS =======
+    const ratingsRanking = [...entries]
+      .filter((e) => e.matches > 0 && e.rating > 0)
+      .sort((a, b) => {
+        if (b.rating !== a.rating) return b.rating - a.rating;
+        return b.matches - a.matches;
+      });
+
+    // ======= OVERALL — campo salvo (mesma fonte do sorteador) =======
+    // Ignora filtros de data; aplica só filtro de posição (playerWhere).
+    // Fonte: player.overallDynamic → player.baseOverall → 60 (resolveOverallScore).
+    const overallPlayers = await prisma.player.findMany({
+      where: playerWhere,
+      select: {
+        id: true,
+        name: true,
+        position: true,
+        nickname: true,
+        photoUrl: true,
+        overallDynamic: true,
+        baseOverall: true,
+      },
+    });
+    const overallRanking = overallPlayers
+      .filter((p) => p.overallDynamic != null)
+      .map((p) => ({
+        player: p,
+        overallScore: Math.round(resolveOverallScore(p, null)),
+      }))
+      .sort((a, b) => b.overallScore - a.overallScore);
+
+    // ======= PRESEN+–AS =======
+    const matchesRanking = [...entries]
+      .filter((e) => e.matches > 0)
+      .sort((a, b) => {
+        if (b.matches !== a.matches) return b.matches - a.matches;
+        if (b.goals !== a.goals) return b.goals - a.goals;
+        return b.assists - a.assists;
+      });
+
+    // ======= FOTOS =======
+    const photosRanking = [...entries]
+      .filter((e) => e.photos > 0)
+      .sort((a, b) => b.photos - a.photos);
+
+    // ======= CRAQUES DA SEMANA (contagem) =======
+    let weeklyWhere = {};
+    if (from && to) {
+      weeklyWhere = {
+        weekStart: {
+          gte: from,
+          lt: to,
+        },
+      };
+    }
+
+    const weeklyRaw = await prisma.weeklyAward.findMany({
+      where: weeklyWhere,
+      include: { bestPlayer: true },
+    });
+
+    const weeklyMap = new Map();
+    for (const w of weeklyRaw) {
+      if (!w.bestPlayer) continue;
+      const id = w.bestPlayer.id;
+      if (!weeklyMap.has(id)) {
+        weeklyMap.set(id, {
+          player: w.bestPlayer,
+          count: 0,
+        });
+      }
+      weeklyMap.get(id).count++;
+    }
+
+    const weeklyAwards = Array.from(weeklyMap.values()).sort(
+      (a, b) => b.count - a.count
+    );
+
+    // ======= CRAQUES DO M+–S (contagem) =======
+    let monthlyWhere = {};
+    const yearNum = parseInt(year, 10);
+    const monthNum = parseInt(month, 10);
+
+    if (year !== "all" && !Number.isNaN(yearNum)) {
+      monthlyWhere.year = yearNum;
+      if (!Number.isNaN(monthNum) && monthNum > 0) {
+        monthlyWhere.month = monthNum;
+      }
+    }
+
+    const monthlyRaw = await prisma.monthlyAward.findMany({
+      where: monthlyWhere,
+      include: { craque: true },
+    });
+
+    const monthlyMap = new Map();
+    for (const m of monthlyRaw) {
+      if (!m.craque) continue;
+      const id = m.craque.id;
+      if (!monthlyMap.has(id)) {
+        monthlyMap.set(id, {
+          player: m.craque,
+          count: 0,
+        });
+      }
+      monthlyMap.get(id).count++;
+    }
+
+    const monthlyAwards = Array.from(monthlyMap.values()).sort(
+      (a, b) => b.count - a.count
+    );
+
+    const winnerColorWhere = { winnerColor: { not: null } };
+    if (from && to) {
+      winnerColorWhere.playedAt = { gte: from, lt: to };
+    }
+
+    const [winnerColorsRaw, totalWinnerColorsAll] = await Promise.all([
+      prisma.match.findMany({
+        where: winnerColorWhere,
+        select: { winnerColor: true },
+      }),
+      prisma.match.count({
+        where: { winnerColor: { not: null } },
+      }),
+    ]);
+
+    const colorLabels = ["Amarelo", "Azul", "Preto", "Vermelho"];
+    const fallbackColorCounts = {
+      Amarelo: 9,
+      Azul: 16,
+      Preto: 6,
+      Vermelho: 13,
+    };
+
+    const colorCounts = new Map(colorLabels.map((c) => [c, 0]));
+    winnerColorsRaw.forEach((m) => {
+      const color = (m.winnerColor || "").trim();
+      if (!colorCounts.has(color)) return;
+      colorCounts.set(color, (colorCounts.get(color) || 0) + 1);
+    });
+
+    const isYear2025 = String(year) === "2025";
+    const isAllMonths = month === "0" || month === 0 || typeof month === "undefined";
+    const useFallbackCounts = isYear2025 && isAllMonths && winnerColorsRaw.length === 0;
+    const colorWins = colorLabels
+      .map((name) => ({
+        name,
+        count: useFallbackCounts
+          ? (fallbackColorCounts[name] || 0)
+          : (colorCounts.get(name) || 0),
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    const last10Ranking = recentRanking.map((e) => ({
+      ...e,
+      last10Score: e.recentScore,
+    }));
+
+    const periodLabel = year === "all"
+      ? "todos os anos"
+      : (Number(month) > 0 ? `mes ${month} de ${year}` : `ano ${year}`);
+    const posLabel = selPosition === "all" ? "todas as posicoes" : selPosition;
+    const metaDescription = `Rankings ${periodLabel}, ${posLabel}.`;
+
+    const rankings = {
+      goals: goalsRanking,
+      assists: assistsRanking,
+      saves: savesRanking,
+      ga: gaRanking,
+      ratings: ratingsRanking,
+      matches: matchesRanking,
+      photos: photosRanking,
+      overall: overallRanking,
+      weighted: weightedRanking,
+      recent: recentRanking,
+      last10: last10Ranking,
+      weeklyAwards,
+      monthlyAwards,
+      colorWins,
+    };
+
+    const payload = {
+      title: "Rankings",
+      activePage: "rankings",
+      rankings,
+      year,
+      month: Number(month),
+      selPosition,
+      currentYear,
+      metaDescription,
+      ogTitle: `Rankings ${periodLabel} | ${res.locals.brand?.name || "Nome da Pelada"}`,
+    };
+
+    setCache(cacheKey, payload);
+    return res.render("rankings", payload);
+
+  } catch (err) {
+    console.error("Erro ao carregar rankings:", err);
+    return res.status(500).send("Erro ao carregar rankings.");
+  }
+});
+
+module.exports = router;
