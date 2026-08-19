@@ -24,13 +24,23 @@ Projeto base white-label para criar um site de pelada com painel admin, jogadore
 5. Instale e prepare o banco:
    ```bash
    npm install
-   npx prisma migrate deploy
+   npm run prisma:deploy
    npm run prisma:seed
    ```
 6. Rode local:
    ```bash
-   npm run dev
-   ```
+npm run dev
+```
+
+Se estiver usando um Postgres gerenciado do Render no `.env`, prefira:
+
+```bash
+npm run prisma:deploy
+npm run prisma:seed
+npm run dev
+```
+
+O `npm run prisma:migrate` usa `prisma migrate dev` e é melhor para Postgres local.
 
 ## Projeto zerado
 
