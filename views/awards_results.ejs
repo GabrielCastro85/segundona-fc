@@ -42,10 +42,10 @@
     padding: 40px 16px;
     color: #f3f4f6;
     background:
-      radial-gradient(circle at top left, rgba(118, 24, 50, 0.12) 0%, transparent 32%),
-      radial-gradient(circle at top right, rgba(245, 178, 27, 0.04) 0%, transparent 18%),
-      radial-gradient(circle at bottom right, rgba(24, 44, 82, 0.12) 0%, transparent 28%),
-      linear-gradient(180deg, #2a0005 0%, #160208 34%, #050509 100%);
+      radial-gradient(circle at top left, rgba(11, 107, 42, 0.28) 0%, transparent 34%),
+      radial-gradient(circle at top right, rgba(245, 178, 27, 0.05) 0%, transparent 18%),
+      radial-gradient(circle at bottom right, rgba(11, 107, 42, 0.16) 0%, transparent 28%),
+      linear-gradient(180deg, #071309 0%, #050805 42%, #020402 100%);
   }
   .awards-export-card {
     position: relative;
@@ -53,10 +53,10 @@
     border-radius: 34px;
     border: 1px solid rgba(245, 178, 27, 0.16);
     background:
-      radial-gradient(circle at top left, rgba(118, 24, 50, 0.12) 0%, transparent 32%),
-      radial-gradient(circle at top right, rgba(245, 178, 27, 0.04) 0%, transparent 18%),
-      radial-gradient(circle at bottom right, rgba(24, 44, 82, 0.12) 0%, transparent 28%),
-      linear-gradient(180deg, #2a0005 0%, #160208 34%, #050509 100%);
+      radial-gradient(circle at top left, rgba(11, 107, 42, 0.30) 0%, transparent 34%),
+      radial-gradient(circle at top right, rgba(245, 178, 27, 0.05) 0%, transparent 18%),
+      radial-gradient(circle at bottom right, rgba(11, 107, 42, 0.14) 0%, transparent 28%),
+      linear-gradient(180deg, #071309 0%, #050805 42%, #020402 100%);
     box-shadow: 0 24px 56px rgba(0, 0, 0, 0.28);
   }
   .awards-export-watermark {
@@ -179,7 +179,7 @@
 
     <figure id="awards-card" class="mx-auto max-w-[720px]">
       <img
-        src="/share/voting-result.jpg?matchId=<%= match.id %>&preview=1&v=nickname-v5"
+        src="/share/voting-result.jpg?matchId=<%= match.id %>&preview=1&v=<%= Date.now() %>"
         alt="Preview do resultado da votação"
         class="awards-preview-image"
       />
@@ -380,7 +380,7 @@
         <div class="flex justify-end">
           <a
             href="/admin/matches/<%= match.id %>/awards/export"
-            class="px-4 py-2 rounded-full bg-horriver-orange text-black text-sm font-semibold shadow-card-soft hover:bg-orange-500 transition"
+            class="px-4 py-2 rounded-full bg-horriver-orange text-black text-sm font-semibold shadow-card-soft hover:bg-yellow-400 transition"
           >
             Baixar imagem dos premios
           </a>
@@ -406,7 +406,7 @@
                 <input type="hidden" name="redirectTo" value="/admin/matches/<%= match.id %>/awards?downloadReady=1#awards-download-flow" />
                 <button
                   type="submit"
-                  class="w-full px-4 py-2 rounded-full bg-horriver-orange text-black text-sm font-semibold shadow-card-soft hover:bg-orange-500 transition"
+                  class="w-full px-4 py-2 rounded-full bg-horriver-orange text-black text-sm font-semibold shadow-card-soft hover:bg-yellow-400 transition"
                 >
                   Sim, encerrar votação
                 </button>

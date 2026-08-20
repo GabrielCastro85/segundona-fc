@@ -82,7 +82,7 @@
           <button
             type="button"
             id="openMonthlyCandidateModal"
-            class="w-full px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
+            class="w-full px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-yellow-400 transition"
             <%= rankingRows.some((row) => row.eligible) ? "" : "disabled" %>
           >
             Revisar classificados
@@ -159,7 +159,7 @@
               <button
                 type="submit"
                 id="submitMonthlyVoteSession"
-                class="w-full sm:w-auto px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
+                class="w-full sm:w-auto px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-yellow-400 transition"
               >
                 Gerar links com selecionados
               </button>
@@ -198,7 +198,7 @@
           <button
             type="button"
             id="exportMonthlyWinnerBtn"
-            class="w-full sm:w-auto inline-flex items-center justify-center px-3 py-2 rounded-full bg-horriver-orange text-black text-[11px] font-semibold hover:bg-orange-500 transition disabled:opacity-60 disabled:cursor-not-allowed"
+            class="w-full sm:w-auto inline-flex items-center justify-center px-3 py-2 rounded-full bg-horriver-orange text-black text-[11px] font-semibold hover:bg-yellow-400 transition disabled:opacity-60 disabled:cursor-not-allowed"
             <%= monthlyVoteWinner ? "" : "disabled" %>
           >
             Exportar card do vencedor

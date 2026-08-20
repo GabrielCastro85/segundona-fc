@@ -5,11 +5,11 @@
     transform: scale(0.98);
   }
   .drop-target {
-    outline: 1px dashed rgba(249, 115, 22, 0.8);
-    background: rgba(249, 115, 22, 0.05);
+    outline: 1px dashed rgba(245, 178, 27, 0.8);
+    background: rgba(245, 178, 27, 0.05);
   }
   .drop-placeholder {
-    border: 1px dashed rgba(249, 115, 22, 0.5);
+    border: 1px dashed rgba(245, 178, 27, 0.5);
     border-radius: 8px;
     height: 32px;
     margin-top: 4px;
@@ -986,7 +986,7 @@
           const teamsPayload = Array.from(resultsEl.querySelectorAll("[data-team]")).map((box, idx) => {
             const rawName = box.querySelector("[data-team-name]")?.textContent?.trim() || `${teamLabelPrefix} ${idx + 1}`;
             const selectEl = box.querySelector("[data-color-select]");
-            const colorValue = selectEl?.value || box.getAttribute("data-team-color") || "#f97316";
+            const colorValue = selectEl?.value || box.getAttribute("data-team-color") || "#f5b21b";
             const nomeCor = box.getAttribute("data-team-color-name") || selectEl?.selectedOptions?.[0]?.text || rawName;
             const colorName = normalizeColorLabel(nomeCor) || normalizeColorLabel(colorValue) || "Vermelho";
             const name = sponsorNames[colorName] || rawName;

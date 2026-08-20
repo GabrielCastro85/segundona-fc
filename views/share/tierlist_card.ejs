@@ -5,6 +5,11 @@
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+  const safeBrand = typeof brand !== "undefined" && brand ? brand : {
+    name: "Segundona FC",
+    logo: "/img/logo-128x128.png",
+    url: "",
+  };
   const safeTiers = Array.isArray(tiers) ? tiers : [];
 %>
 <!DOCTYPE html>
@@ -12,7 +17,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=720" />
-  <title>Tierlist <%= brand.name || "Segundona FC" %></title>
+  <title>Tierlist <%= safeBrand.name || "Segundona FC" %></title>
   <style>
     <%- fontCss || "" %>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -31,8 +36,9 @@
       overflow: hidden;
       background:
         radial-gradient(circle at 18% -8%, rgba(11, 107, 42, 0.42), transparent 34%),
-        radial-gradient(circle at 88% 10%, rgba(245, 178, 27, 0.12), transparent 28%),
-        linear-gradient(180deg, #260308 0%, #0b070d 48%, #050509 100%);
+        radial-gradient(circle at 88% 10%, rgba(245, 178, 27, 0.08), transparent 28%),
+        radial-gradient(circle at 50% 100%, rgba(11, 107, 42, 0.12), transparent 36%),
+        linear-gradient(180deg, #071309 0%, #050805 48%, #020402 100%);
       border: 1px solid rgba(245, 178, 27, 0.28);
     }
     .tl-header {
@@ -47,7 +53,7 @@
       font-weight: 900;
       letter-spacing: 0.24em;
       text-transform: uppercase;
-      color: rgba(255, 179, 106, 0.9);
+      color: #ffe08a;
       margin-bottom: 18px;
     }
     .tl-title {
@@ -89,6 +95,7 @@
       text-transform: uppercase;
     }
     .tl-players {
+      min-width: 0;
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
@@ -99,7 +106,7 @@
       display: inline-flex;
       align-items: center;
       gap: 7px;
-      max-width: 190px;
+      max-width: min(100%, 420px);
       min-height: 34px;
       padding: 5px 9px 5px 5px;
       border-radius: 999px;
@@ -108,6 +115,7 @@
       font-size: 11px;
       font-weight: 800;
       white-space: nowrap;
+      overflow: hidden;
     }
     .tl-player img {
       width: 24px;
@@ -115,6 +123,13 @@
       border-radius: 999px;
       object-fit: cover;
       background: #111827;
+      flex: 0 0 auto;
+    }
+    .tl-player span {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .tl-footer {
       display: flex;
@@ -134,16 +149,16 @@
   <main class="tl-card">
     <header class="tl-header">
       <div>
-        <div class="tl-brand"><%= esc(brand.name || "Segundona FC") %></div>
-        <h1 class="tl-title"><%= esc(title || `Tierlist ${brand.name || "Segundona FC"}`) %></h1>
+        <div class="tl-brand"><%= esc(safeBrand.name || "Segundona FC") %></div>
+        <h1 class="tl-title"><%= esc(title || `Tierlist ${safeBrand.name || "Segundona FC"}`) %></h1>
       </div>
-      <img class="tl-logo" src="<%= logoUrl || `${cleanBaseUrl}${brand.logo || '/img/logo-128x128.png'}` %>" alt="<%= esc(brand.name || 'Segundona FC') %>" />
+      <img class="tl-logo" src="<%= logoUrl || `${cleanBaseUrl}${safeBrand.logo || '/img/logo-128x128.png'}` %>" alt="<%= esc(safeBrand.name || 'Segundona FC') %>" />
     </header>
 
     <section class="tl-rows">
       <% safeTiers.forEach((tier) => { %>
         <article class="tl-row">
-          <div class="tl-label" style="background:<%= esc(tier.color || "#f97316") %>"><%= esc(tier.label || "Tier") %></div>
+          <div class="tl-label" style="background:<%= esc(tier.color || "#f5b21b") %>"><%= esc(tier.label || "Tier") %></div>
           <div class="tl-players">
             <% (tier.players || []).forEach((player) => { %>
               <div class="tl-player">
@@ -157,8 +172,8 @@
     </section>
 
     <footer class="tl-footer">
-      <span><%= esc(brand.url || "segundona-fc.com") %></span>
-      <span><%= esc(brand.name || "Segundona FC") %></span>
+      <span><%= esc(safeBrand.url || "segundona-fc.com") %></span>
+      <span><%= esc(safeBrand.name || "Segundona FC") %></span>
     </footer>
   </main>
 </body>

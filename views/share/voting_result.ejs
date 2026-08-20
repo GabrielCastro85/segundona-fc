@@ -14,6 +14,10 @@
   };
   const logoMarkSrc = typeof logoMarkUrl !== 'undefined' && logoMarkUrl ? logoMarkUrl : baseUrl + '/img/logo-128x128.png';
   const logoIconSrc = typeof logoIconUrl !== 'undefined' && logoIconUrl ? logoIconUrl : baseUrl + '/img/logo-32x32.png';
+  const safeBrand = typeof brand !== 'undefined' && brand ? brand : {
+    name: 'Segundona FC',
+    url: '',
+  };
   const displayName = (player) => player?.nickname || player?.name || '-';
   const initialOf = (player) => displayName(player).charAt(0).toUpperCase() || '?';
   const craque = awards?.craque || null;
@@ -51,9 +55,10 @@
       border-radius: 34px;
       overflow: hidden;
       background:
-        radial-gradient(circle at 12% 10%, rgba(11, 107, 42,0.26) 0%, transparent 38%),
-        radial-gradient(circle at 86% 86%, rgba(245, 178, 27,0.10) 0%, transparent 34%),
-        linear-gradient(155deg, #1e0509 0%, #0d0210 52%, #050509 100%);
+        radial-gradient(circle at 12% 10%, rgba(11, 107, 42,0.34) 0%, transparent 38%),
+        radial-gradient(circle at 86% 86%, rgba(245, 178, 27,0.08) 0%, transparent 34%),
+        radial-gradient(circle at 50% 100%, rgba(11, 107, 42,0.12) 0%, transparent 36%),
+        linear-gradient(155deg, #071309 0%, #050805 52%, #020402 100%);
       border: 1px solid rgba(245, 178, 27,0.22);
       box-shadow: 0 18px 42px rgba(0,0,0,0.34);
       font-family: 'Manrope', system-ui, sans-serif;
@@ -385,7 +390,7 @@
       <!-- Branding -->
       <div class="vrc-branding">
         <img class="vrc-logo" src="<%= logoIconSrc %>" alt="" />
-        <span class="vrc-brand-name"><%= brand.name || "Segundona FC" %></span>
+        <span class="vrc-brand-name"><%= safeBrand.name || "Segundona FC" %></span>
       </div>
 
       <!-- Título + info da pelada -->
@@ -490,8 +495,8 @@
 
       <!-- Footer -->
       <div class="vrc-footer">
-        <span><%= brand.url || "segundona-fc.com" %></span>
-        <span><%= brand.name || "Segundona FC" %></span>
+        <span><%= safeBrand.url || "segundona-fc.com" %></span>
+        <span><%= safeBrand.name || "Segundona FC" %></span>
       </div>
 
     </div>

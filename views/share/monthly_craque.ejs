@@ -11,6 +11,10 @@
           ? winner.photoUrl
           : baseUrl + '/' + String(winner.photoUrl).replace(/^\/+/, ''))
       : null;
+  const safeBrand = typeof brand !== 'undefined' && brand ? brand : {
+    name: 'Segundona FC',
+    url: '',
+  };
 %>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -34,9 +38,10 @@
       border-radius: 40px;
       overflow: hidden;
       background:
-        radial-gradient(circle at 14% 8%, rgba(11, 107, 42,0.30) 0%, transparent 40%),
-        radial-gradient(circle at 88% 90%, rgba(245, 178, 27,0.12) 0%, transparent 36%),
-        linear-gradient(155deg, #1e0509 0%, #0d0210 52%, #050509 100%);
+        radial-gradient(circle at 14% 8%, rgba(11, 107, 42,0.36) 0%, transparent 40%),
+        radial-gradient(circle at 88% 90%, rgba(245, 178, 27,0.08) 0%, transparent 36%),
+        radial-gradient(circle at 50% 100%, rgba(11, 107, 42,0.12) 0%, transparent 36%),
+        linear-gradient(155deg, #071309 0%, #050805 52%, #020402 100%);
       border: 1px solid rgba(245, 178, 27,0.22);
       box-shadow: 0 40px 96px rgba(0,0,0,0.52);
       font-family: 'Manrope', system-ui, sans-serif;
@@ -158,7 +163,7 @@
 
       <div class="mc-branding">
         <img class="mc-logo" src="<%= typeof logoIconUrl !== 'undefined' && logoIconUrl ? logoIconUrl : baseUrl + '/img/logo-32x32.png' %>" alt="" />
-        <span class="mc-brand-name"><%= brand.name || "Segundona FC" %></span>
+        <span class="mc-brand-name"><%= safeBrand.name || "Segundona FC" %></span>
       </div>
 
       <div class="mc-title-row">
@@ -217,8 +222,8 @@
       </div>
 
       <div class="mc-footer">
-        <span><%= brand.url || "segundona-fc.com" %></span>
-        <span><%= brand.name || "Segundona FC" %></span>
+        <span><%= safeBrand.url || "segundona-fc.com" %></span>
+        <span><%= safeBrand.name || "Segundona FC" %></span>
       </div>
 
     </div>

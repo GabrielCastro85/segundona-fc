@@ -446,12 +446,15 @@ router.get("/", async (req, res) => {
       },
     });
     const overallRanking = overallPlayers
-      .filter((p) => p.overallDynamic != null)
+      .filter((p) => p.overallDynamic != null || p.baseOverall != null)
       .map((p) => ({
         player: p,
         overallScore: Math.round(resolveOverallScore(p, null)),
       }))
-      .sort((a, b) => b.overallScore - a.overallScore);
+      .sort((a, b) => {
+        if (b.overallScore !== a.overallScore) return b.overallScore - a.overallScore;
+        return String(a.player.name || "").localeCompare(String(b.player.name || ""), "pt-BR");
+      });
 
     // ======= PRESEN+–AS =======
     const matchesRanking = [...entries]

@@ -125,7 +125,7 @@ router.get("/player-card-test.jpg", async (req, res) => {
   console.log(`[share:player-card] request player #${playerId}`);
 
   // Cache de 1 hora (dados do jogador podem mudar)
-  const cacheKey = `player-card-v2-${playerId}`;
+  const cacheKey = `player-card-v3-${playerId}`;
   const cached = readCache(cacheKey, 60 * 60 * 1000);
   if (cached) {
     console.log(`[share:player-card] cache hit player #${playerId} (${Date.now() - t0}ms)`);
@@ -253,6 +253,7 @@ router.get("/voting-result-html", async (req, res) => {
     const logoDataUri = await getLineupLogoDataUri();
     const html = await ejs.renderFile(VOTING_TEMPLATE, {
       ...data,
+      brand: res.locals.brand || req.app.locals.brand,
       baseUrl,
       logoMarkUrl: logoDataUri,
       logoIconUrl: logoDataUri,
@@ -276,7 +277,7 @@ router.get("/voting-result.jpg", async (req, res) => {
   console.log(`[share:voting-result] request match #${matchId}`);
 
   // Cache versionado para evitar devolver imagens antigas quando o layout muda.
-  const cacheKeyVoting = `voting-result-v6-${matchId}`;
+  const cacheKeyVoting = `voting-result-v7-${matchId}`;
   const cachedVoting = readCache(cacheKeyVoting);
   if (cachedVoting) {
     console.log(`[share:voting-result] cache hit match #${matchId} (${Date.now() - t0}ms)`);
@@ -295,6 +296,7 @@ router.get("/voting-result.jpg", async (req, res) => {
     const logoDataUri = await getLineupLogoDataUri();
     const html = await ejs.renderFile(VOTING_TEMPLATE, {
       ...data,
+      brand: res.locals.brand || req.app.locals.brand,
       baseUrl,
       logoMarkUrl: logoDataUri,
       logoIconUrl: logoDataUri,
@@ -417,6 +419,7 @@ router.get("/monthly-craque-html", async (req, res) => {
     const logoDataUri = await getLineupLogoDataUri();
     const html = await ejs.renderFile(MONTHLY_CRAQUE_TEMPLATE, {
       ...data,
+      brand: res.locals.brand || req.app.locals.brand,
       baseUrl,
       fontCss: getLineupFontCss(),
       logoMarkUrl: logoDataUri,
@@ -440,7 +443,7 @@ router.get("/monthly-craque.jpg", async (req, res) => {
   console.log(`[share:craque-mes] request session #${sessionId}`);
 
   // Cache permanente — vencedor não muda após sessão encerrada
-  const cacheKeyCraque = `monthly-craque-v7-${sessionId}`;
+  const cacheKeyCraque = `monthly-craque-v8-${sessionId}`;
   const cachedCraque = readCache(cacheKeyCraque);
   if (cachedCraque) {
     console.log(`[share:craque-mes] cache hit session #${sessionId} (${Date.now() - t0}ms)`);
@@ -456,6 +459,7 @@ router.get("/monthly-craque.jpg", async (req, res) => {
     const logoDataUri = await getLineupLogoDataUri();
     const html = await ejs.renderFile(MONTHLY_CRAQUE_TEMPLATE, {
       ...data,
+      brand: res.locals.brand || req.app.locals.brand,
       baseUrl: host,
       fontCss: getLineupFontCss(),
       logoMarkUrl: logoDataUri,
@@ -556,6 +560,7 @@ router.post("/lineup-html", async (req, res) => {
       goalkeepers: goalkeepers || [],
       matchDate: matchDate || "",
       matchDescription: matchDescription || "Pelada",
+      brand: res.locals.brand || req.app.locals.brand,
       baseUrl,
       logoMarkUrl: logoDataUri,
       logoIconUrl: logoDataUri,
@@ -585,6 +590,7 @@ async function generateLineupJpeg(req, res) {
         goalkeepers: goalkeepers || [],
         matchDate: matchDate || "",
         matchDescription: matchDescription || "Pelada",
+        brand: res.locals.brand || req.app.locals.brand,
         baseUrl,
         logoMarkUrl: logoDataUri,
         logoIconUrl: logoDataUri,
@@ -671,6 +677,7 @@ router.post("/tierlist.jpg", async (req, res) => {
     const html = await ejs.renderFile(TIERLIST_TEMPLATE, {
       title,
       tiers,
+      brand: res.locals.brand || req.app.locals.brand,
       baseUrl,
       logoUrl: logoDataUri,
       fontCss: getLineupFontCss(),
@@ -685,7 +692,7 @@ router.post("/tierlist.jpg", async (req, res) => {
       resourceOrigin: baseUrl,
     });
 
-    return sendJpeg(res, buffer, "tierlist-horriver.jpg");
+    return sendJpeg(res, buffer, "tierlist-segundona.jpg");
   } catch (err) {
     console.error("[share:tierlist] error: ", err);
     return sendImageError(res, "Não foi possível gerar a imagem da tierlist agora. Tente novamente em alguns segundos.");

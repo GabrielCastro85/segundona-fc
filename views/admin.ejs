@@ -1,4 +1,4 @@
-﻿<% /* Painel do Admin - reorganizado para destacar as funcoes principais */ %>
+<% /* Painel do Admin - reorganizado para destacar as funcoes principais */ %>
 
 <style>
   @import url("https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.css");
@@ -73,7 +73,7 @@
   }
   .admin-toolbar-link:hover {
     border-color: rgba(245, 178, 27, 0.4);
-    color: #ffb685;
+    color: #ffe08a;
     background: rgba(245, 178, 27, 0.08);
   }
   .admin-toolbar-link--accent {
@@ -219,7 +219,7 @@
   <header class="admin-panel rounded-[1.9rem] p-5 md:p-6">
     <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
       <div class="space-y-3">
-        <span class="inline-flex items-center gap-2 rounded-full border border-horriver-orange/25 bg-horriver-orange/10 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[#ffb685]">
+        <span class="inline-flex items-center gap-2 rounded-full border border-horriver-orange/25 bg-horriver-orange/10 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[#ffe08a]">
           <span class="inline-flex h-4 w-4 items-center justify-center rounded-md border border-horriver-orange/40 text-[9px] text-horriver-orange">AD</span>
           Painel
         </span>
@@ -292,7 +292,7 @@
           <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
           Financeiro
         </a>
-        <a href="/admin/monthly-vote" class="px-3 py-1 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition">Votação do mês</a>
+        <a href="/admin/monthly-vote" class="px-3 py-1 rounded-full bg-horriver-orange text-black font-semibold hover:bg-yellow-400 transition">Votação do mês</a>
       </div>
     </div>
   </div>
@@ -321,7 +321,7 @@
       </div>
       <a
         href="/admin/matches/<%= lastMatch.id %>"
-        class="flex-shrink-0 inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-black text-xs font-semibold hover:bg-orange-500 transition"
+        class="flex-shrink-0 inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-black text-xs font-semibold hover:bg-yellow-400 transition"
       >Abrir stats</a>
     </div>
     <% } %>
@@ -389,7 +389,7 @@
           </label>
           <button
             type="submit"
-            class="w-full px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
+            class="w-full px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-yellow-400 transition"
           >Criar Pelada</button>
         </form>
       </div>
@@ -427,7 +427,7 @@
                       <div class="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-2">
                         <a
                           href="/admin/matches/<%= match.id %>"
-                          class="inline-flex items-center justify-center px-3 py-1 rounded-full bg-horriver-orange text-black text-[11px] font-semibold hover:bg-orange-500 transition min-h-[34px]"
+                          class="inline-flex items-center justify-center px-3 py-1 rounded-full bg-horriver-orange text-black text-[11px] font-semibold hover:bg-yellow-400 transition min-h-[34px]"
                         >Stats</a>
                         <form action="/admin/matches/<%= match.id %>/delete" method="POST" onsubmit="return confirm('Excluir está pelada e todos os dados?');">
                            <button type="submit" class="px-2 py-1 rounded-full text-red-500 hover:text-red-400 text-[11px] min-h-[34px]">Excluir</button>
@@ -566,7 +566,7 @@
             <button
               id="weeklySubmitButton"
               type="submit"
-              class="w-full sm:flex-1 px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
+              class="w-full sm:flex-1 px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-yellow-400 transition"
             >
               Salvar destaque
             </button>
@@ -651,7 +651,7 @@
             </select>
           </label>
           <div class="flex flex-col sm:flex-row gap-2">
-            <button id="monthlySubmitButton" type="submit" class="w-full sm:flex-1 px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition">
+            <button id="monthlySubmitButton" type="submit" class="w-full sm:flex-1 px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-yellow-400 transition">
               Salvar craque do mês
             </button>
             <button
@@ -706,7 +706,7 @@
         </div>
         <a
           href="/admin/premiacao"
-          class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-[11px] md:text-xs font-medium text-black hover:bg-orange-500 transition shadow-card-soft"
+          class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-[11px] md:text-xs font-medium text-black hover:bg-yellow-400 transition shadow-card-soft"
         >
           Gerenciar premiação da temporada
         </a>
@@ -804,7 +804,7 @@
             Foto
             <input type="file" name="photo" class="text-sm" />
           </label>
-          <button type="submit" class="w-full px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition">Adicionar</button>
+          <button type="submit" class="w-full px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-yellow-400 transition">Adicionar</button>
         </form>
       </div>
 
@@ -936,7 +936,7 @@
     <section class="scroll-mt-16">
       <div class="admin-focus-panel rounded-2xl p-5 h-full flex flex-col justify-between gap-4">
         <div class="space-y-3">
-          <span class="inline-flex items-center gap-2 rounded-full border border-horriver-orange/25 bg-horriver-orange/10 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-[#ffb685]">
+          <span class="inline-flex items-center gap-2 rounded-full border border-horriver-orange/25 bg-horriver-orange/10 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-[#ffe08a]">
             Votação do mês
           </span>
           <div>
@@ -950,7 +950,7 @@
         </div>
         <a
           href="/admin/monthly-vote"
-          class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-black text-xs font-semibold hover:bg-orange-500 transition"
+          class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-black text-xs font-semibold hover:bg-yellow-400 transition"
         >
           Abrir painel
         </a>
@@ -1006,7 +1006,7 @@
             <button
               type="submit"
               id="pdfGenerateBtn"
-              class="inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition disabled:opacity-60 disabled:cursor-not-allowed"
+              class="inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-horriver-orange text-black font-semibold hover:bg-yellow-400 transition disabled:opacity-60 disabled:cursor-not-allowed"
             >
               Gerar PDF
             </button>

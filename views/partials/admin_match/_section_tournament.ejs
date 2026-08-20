@@ -121,7 +121,7 @@
       return `<span style="${style}">${name}</span>`;
     };
     const getTeamLabel = (team) => normalizeSponsorLabel(team?.color || team?.name);
-    const getTeamColor = (team) => sponsorColorByLabel[getTeamLabel(team)] || "#f97316";
+    const getTeamColor = (team) => sponsorColorByLabel[getTeamLabel(team)] || "#f5b21b";
     const teamNameFromRow = (row) => {
       const team = teamById.get(row.teamId);
       if (team) return formatTeamName(team);
@@ -181,7 +181,7 @@
         <div class="md:col-span-2 flex justify-end">
           <button
             type="submit"
-            class="w-full sm:w-auto px-4 py-2 rounded-full bg-horriver-orange text-horriver-bg text-xs md:text-sm font-semibold hover:bg-orange-500 transition shadow-card-soft"
+            class="w-full sm:w-auto px-4 py-2 rounded-full bg-horriver-orange text-horriver-bg text-xs md:text-sm font-semibold hover:bg-yellow-400 transition shadow-card-soft"
           >
             Criar torneio
           </button>
@@ -466,7 +466,7 @@
         </div>
       </div>
 
-      <div class="export-footer export-only">@HORRIVERPLATE</div>
+      <div class="export-footer export-only"><%= brand.name || "Segundona FC" %></div>
     </div>
 
     <div id="tournament-games-export-admin" class="tournament-export" data-export-root>
@@ -593,7 +593,7 @@
         </div>
       <% }); %>
 
-      <div class="export-footer export-only">@HORRIVERPLATE</div>
+      <div class="export-footer export-only"><%= brand.name || "Segundona FC" %></div>
     </div>
     <% const finalWinnerId = finalGame?.winnerTeamId || null; %>
     <% if (finalWinnerId && standings.length >= 4) { %>
@@ -604,7 +604,7 @@
         <div
           class="border border-horriver-border rounded-2xl p-5 shadow-[0_16px_40px_rgba(0,0,0,0.45)]"
           id="tournamentResultCard"
-          style="background: radial-gradient(120% 140% at 50% 0%, rgba(255,140,0,0.12), transparent 55%), linear-gradient(180deg, rgba(7,7,7,0.95), rgba(0,0,0,0.96));"
+          style="background: radial-gradient(120% 140% at 50% 0%, rgba(245,178,27,0.10), transparent 55%), linear-gradient(180deg, rgba(7,7,7,0.95), rgba(0,0,0,0.96));"
         >
         <div class="flex items-center justify-between gap-3 mb-4">
           <h3 class="text-base md:text-lg font-semibold text-horriver-light tracking-[0.12em] uppercase">
@@ -630,7 +630,7 @@
                 </span>
                 <div
                   class="rounded-full <%= pos === 1 ? 'border-4' : 'border-2' %> border-horriver-orange/80"
-                  style="width:<%= circleSize %>px; height:<%= circleSize %>px; background:<%= getTeamColor(team) %>; box-shadow:<%= pos === 1 ? '0 0 0 4px rgba(255,140,0,0.22), 0 0 22px rgba(255,140,0,0.35), 0 16px 32px rgba(0,0,0,0.45)' : '0 10px 22px rgba(0,0,0,0.35)' %>; position:absolute; top:<%= circleTop %>px; left:50%; transform:translateX(-50%);"
+                  style="width:<%= circleSize %>px; height:<%= circleSize %>px; background:<%= getTeamColor(team) %>; box-shadow:<%= pos === 1 ? '0 0 0 4px rgba(245,178,27,0.22), 0 0 22px rgba(245,178,27,0.32), 0 16px 32px rgba(0,0,0,0.45)' : '0 10px 22px rgba(0,0,0,0.35)' %>; position:absolute; top:<%= circleTop %>px; left:50%; transform:translateX(-50%);"
                 ></div>
               </div>
               <div class="<%= pos === 1 ? 'text-base md:text-lg' : 'text-sm md:text-base' %> font-semibold text-horriver-light tracking-wide">
@@ -711,7 +711,7 @@
           <form action="/admin/matches/<%= match.id %>/tournament/generate-semis" method="POST">
             <button
               type="submit"
-              class="px-3 py-2 rounded-full bg-horriver-orange text-horriver-bg text-[11px] font-semibold hover:bg-orange-500 transition <%= (!groupComplete || semisExist) ? 'opacity-50 cursor-not-allowed' : '' %>"
+              class="px-3 py-2 rounded-full bg-horriver-orange text-horriver-bg text-[11px] font-semibold hover:bg-yellow-400 transition <%= (!groupComplete || semisExist) ? 'opacity-50 cursor-not-allowed' : '' %>"
               <%= (!groupComplete || semisExist) ? "disabled" : "" %>
             >
               Gerar Semifinais
@@ -720,7 +720,7 @@
           <form action="/admin/matches/<%= match.id %>/tournament/generate-final" method="POST">
             <button
               type="submit"
-              class="px-3 py-2 rounded-full bg-horriver-orange text-horriver-bg text-[11px] font-semibold hover:bg-orange-500 transition <%= (!semisDecided || finalExists) ? 'opacity-50 cursor-not-allowed' : '' %>"
+              class="px-3 py-2 rounded-full bg-horriver-orange text-horriver-bg text-[11px] font-semibold hover:bg-yellow-400 transition <%= (!semisDecided || finalExists) ? 'opacity-50 cursor-not-allowed' : '' %>"
               <%= (!semisDecided || finalExists) ? "disabled" : "" %>
             >
               Gerar Final
@@ -814,7 +814,7 @@
                           />
                           <button
                             type="submit"
-                            class="px-3 py-1 rounded-full bg-horriver-orange text-horriver-bg text-[11px] font-semibold hover:bg-orange-500 transition"
+                            class="px-3 py-1 rounded-full bg-horriver-orange text-horriver-bg text-[11px] font-semibold hover:bg-yellow-400 transition"
                           >
                             Salvar
                           </button>
@@ -917,7 +917,7 @@
                           />
                           <button
                             type="submit"
-                            class="px-3 py-1 rounded-full bg-horriver-orange text-horriver-bg text-[11px] font-semibold hover:bg-orange-500 transition"
+                            class="px-3 py-1 rounded-full bg-horriver-orange text-horriver-bg text-[11px] font-semibold hover:bg-yellow-400 transition"
                           >
                             Salvar
                           </button>
@@ -1045,7 +1045,7 @@
                         />
                         <button
                           type="submit"
-                          class="px-3 py-1 rounded-full bg-horriver-orange text-horriver-bg text-[11px] font-semibold hover:bg-orange-500 transition"
+                          class="px-3 py-1 rounded-full bg-horriver-orange text-horriver-bg text-[11px] font-semibold hover:bg-yellow-400 transition"
                         >
                           Salvar
                         </button>

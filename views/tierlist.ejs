@@ -1,4 +1,4 @@
-﻿<section class="space-y-6 animate-fadeIn">
+<section class="space-y-6 animate-fadeIn">
   <header class="page-hero space-y-3">
     <span class="hero-badge text-horriver-gray">
       <span class="hero-icon">TL</span>
@@ -441,7 +441,7 @@
       });
 
       addTierBtn.addEventListener("click", () => {
-        const row = createTierRow({ label: "Novo", color: "#f97316" });
+        const row = createTierRow({ label: "Novo", color: "#f5b21b" });
         tierContainer.appendChild(row);
         setupSortable(row.querySelector(".tier-list"));
         row.querySelector(".tier-name").focus();
@@ -454,7 +454,7 @@
           downloadBtn.disabled = true;
           const tiers = Array.from(tierContainer.querySelectorAll(".tier-row")).map((row) => {
             const label = row.querySelector(".tier-name")?.value || row.dataset.tier || "Tier";
-            const color = row.querySelector(".tier-color")?.value || "#f97316";
+            const color = row.querySelector(".tier-color")?.value || "#f5b21b";
             const players = Array.from(row.querySelectorAll(".player-item")).map((item) => ({
               name: item.dataset.playerName || item.textContent.trim() || "Jogador",
               photoUrl: item.dataset.playerPhoto || "",
@@ -479,7 +479,7 @@
           const blob = await res.blob();
           const url = URL.createObjectURL(blob);
           const link = document.createElement("a");
-          link.download = "tierlist-horriver.jpg";
+          link.download = "tierlist-segundona.jpg";
           link.href = url;
           document.body.appendChild(link);
           link.click();

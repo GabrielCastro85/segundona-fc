@@ -7,6 +7,11 @@
    */
 
   const cleanBaseUrl = String(baseUrl || "").replace(/\/$/, "");
+  const safeBrand = typeof brand !== "undefined" && brand ? brand : {
+    name: "Segundona FC",
+    logo: "/img/logo-128x128.png",
+    url: "",
+  };
   const logoMarkSrc = typeof logoMarkUrl !== "undefined" && logoMarkUrl
     ? logoMarkUrl
     : `${cleanBaseUrl}/img/logo-128x128.png`;
@@ -73,7 +78,7 @@
         rank: "#f8fafc",
       },
       Vermelho: {
-        strip: "linear-gradient(90deg, #fb7185 0%, #ef4444 46%, #f97316 100%)",
+        strip: "linear-gradient(90deg, #fb7185 0%, #ef4444 46%, #f5b21b 100%)",
         border: "rgba(248, 113, 113, 0.68)",
         glow: "rgba(239, 68, 68, 0.26)",
         panel:
@@ -115,6 +120,12 @@
     }
 
     return best.lines;
+  };
+
+  const teamDisplayName = (team = {}) => {
+    const color = String(team.colorName || "").replace(/\s+/g, " ").trim();
+    if (color) return `Time ${color}`;
+    return String(team.name || "Time").replace(/\s+/g, " ").trim();
   };
 
   const titleSizeFor = (lines = [], columns = 3) => {
@@ -232,10 +243,10 @@
       isolation: isolate;
       border-radius: 52px;
       background:
-        radial-gradient(circle at 8% -6%, rgba(11, 107, 42, 0.34) 0%, transparent 32%),
-        radial-gradient(circle at 82% 14%, rgba(245, 178, 27, 0.10) 0%, transparent 28%),
-        radial-gradient(circle at 50% 100%, rgba(245, 178, 27, 0.08) 0%, transparent 34%),
-        linear-gradient(180deg, #330309 0%, #160207 37%, #050509 100%);
+        radial-gradient(circle at 8% -6%, rgba(11, 107, 42, 0.48) 0%, transparent 34%),
+        radial-gradient(circle at 84% 12%, rgba(245, 178, 27, 0.08) 0%, transparent 26%),
+        radial-gradient(circle at 50% 100%, rgba(11, 107, 42, 0.16) 0%, transparent 36%),
+        linear-gradient(180deg, #071309 0%, #050805 43%, #020402 100%);
       border: 1px solid rgba(245, 178, 27, 0.25);
       box-shadow: 0 34px 90px rgba(0, 0, 0, 0.50);
     }
@@ -327,7 +338,9 @@
       padding: 34px 26px 20px;
       border-radius: 28px;
       border: 1px solid rgba(245, 178, 27, 0.34);
-      background: linear-gradient(180deg, rgba(18, 17, 23, 0.96) 0%, rgba(12, 12, 16, 0.98) 100%);
+      background:
+        radial-gradient(circle at top right, rgba(11, 107, 42, 0.18), transparent 58%),
+        linear-gradient(180deg, rgba(8, 13, 9, 0.96) 0%, rgba(4, 8, 5, 0.98) 100%);
       display: grid;
       grid-template-columns: minmax(0, 1fr) 58px;
       gap: 20px;
@@ -683,7 +696,7 @@
     <div class="lc-inner">
       <header class="lc-header">
         <div class="lc-heading">
-          <div class="lc-brand"><%= brand.name || "Segundona FC" %></div>
+          <div class="lc-brand"><%= safeBrand.name || "Segundona FC" %></div>
           <h1 class="lc-title">Times Sorteados</h1>
         </div>
 
@@ -694,7 +707,7 @@
             <span class="lc-count"><%= teamCount %> times</span>
           </div>
           <span class="lc-logo-ring">
-            <img src="<%= logoIconSrc %>" alt="<%= brand.name || 'Segundona FC' %>" />
+            <img src="<%= logoIconSrc %>" alt="<%= safeBrand.name || 'Segundona FC' %>" />
           </span>
         </aside>
       </header>
@@ -704,7 +717,7 @@
       <main class="lc-teams <%= gridClass %>">
         <% teams.forEach(function(team, index) {
           const theme = colorTheme(team.colorName);
-          const titleLines = splitTeamName(team.name);
+          const titleLines = splitTeamName(teamDisplayName(team));
           const titleSize = titleSizeFor(titleLines, gridCols);
           const sortedPlayers = (team.players || []).slice().sort(function(a, b) {
             const rankDiff = posRank(a.pos) - posRank(b.pos);
@@ -787,8 +800,8 @@
       <% } %>
 
       <footer class="lc-footer">
-        <span><%= brand.url || "segundona-fc.com" %></span>
-        <span><%= brand.name || "Segundona FC" %></span>
+        <span><%= safeBrand.url || "segundona-fc.com" %></span>
+        <span><%= safeBrand.name || "Segundona FC" %></span>
       </footer>
     </div>
   </div>
