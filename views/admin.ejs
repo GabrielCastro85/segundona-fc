@@ -429,7 +429,10 @@
                           href="/admin/matches/<%= match.id %>"
                           class="inline-flex items-center justify-center px-3 py-1 rounded-full bg-horriver-orange text-black text-[11px] font-semibold hover:bg-yellow-400 transition min-h-[34px]"
                         >Stats</a>
-                        <form action="/admin/matches/<%= match.id %>/delete" method="POST" onsubmit="return confirm('Excluir está pelada e todos os dados?');">
+                        <form action="/admin/matches/<%= match.id %>/delete" method="POST" onsubmit="return confirm('Excluir esta pelada e todos os dados?');">
+                          <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                          <% } %>
                            <button type="submit" class="px-2 py-1 rounded-full text-red-500 hover:text-red-400 text-[11px] min-h-[34px]">Excluir</button>
                         </form>
                       </div>

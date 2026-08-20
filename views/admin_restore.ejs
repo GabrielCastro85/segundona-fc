@@ -424,6 +424,9 @@
                               class="inline"
                               onsubmit="return confirm('Tem certeza que deseja excluir essa pelada?');"
                             >
+                              <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                              <% } %>
                               <button
                                 type="submit"
                                 class="px-2 py-1 rounded-full text-[11px] text-red-500 hover:underline min-h-[32px]"

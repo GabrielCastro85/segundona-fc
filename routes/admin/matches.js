@@ -979,6 +979,17 @@ router.post("/matches/:id/delete", requireAdmin, async (req, res) => {
       : [];
     const publicVoteIds = publicVotes.map((v) => v.id);
 
+    const tournament = await prisma.tournament.findUnique({
+      where: { matchId: id },
+      select: { id: true },
+    });
+
+    const guestPayments = await prisma.guestPayment.findMany({
+      where: { matchId: id },
+      select: { id: true },
+    });
+    const guestPaymentIds = guestPayments.map((g) => g.id);
+
     await prisma.$transaction([
       ballotIds.length
         ? prisma.voteRanking.deleteMany({
@@ -1018,11 +1029,29 @@ router.post("/matches/:id/delete", requireAdmin, async (req, res) => {
         ? prisma.publicVote.deleteMany({ where: { id: { in: publicVoteIds } } })
         : prisma.$executeRaw`SELECT 1`,
 
+      tournament
+        ? prisma.tournamentGame.deleteMany({ where: { tournamentId: tournament.id } })
+        : prisma.$executeRaw`SELECT 1`,
+      tournament
+        ? prisma.tournamentTeam.deleteMany({ where: { tournamentId: tournament.id } })
+        : prisma.$executeRaw`SELECT 1`,
+      tournament
+        ? prisma.tournament.delete({ where: { id: tournament.id } })
+        : prisma.$executeRaw`SELECT 1`,
+
+      guestPaymentIds.length
+        ? prisma.cashTransaction.deleteMany({
+            where: { guestPaymentId: { in: guestPaymentIds } },
+          })
+        : prisma.$executeRaw`SELECT 1`,
+      guestPaymentIds.length
+        ? prisma.guestPayment.deleteMany({ where: { id: { in: guestPaymentIds } } })
+        : prisma.$executeRaw`SELECT 1`,
+
       prisma.lineupDraw.deleteMany({ where: { matchId: id } }),
 
-      prisma.weeklyAward.updateMany({
+      prisma.weeklyAward.deleteMany({
         where: { winningMatchId: id },
-        data: { winningMatchId: null },
       }),
 
       prisma.playerStat.deleteMany({
