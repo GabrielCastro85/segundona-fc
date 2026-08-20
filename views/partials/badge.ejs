@@ -1,0 +1,48 @@
+<%
+  const safeTitle = title || "Conquista";
+  const safeCategory = String(category || "").toLowerCase();
+  const safeRarity = String(rarity || "bronze").toLowerCase();
+  const isUnlocked = !!unlocked;
+  const currentRaw = typeof progressCurrent !== "undefined"
+    ? progressCurrent
+    : (typeof value !== "undefined" ? value : 0);
+  const targetRaw = typeof progressTarget !== "undefined" ? progressTarget : null;
+  const current = Number(currentRaw) || 0;
+  const target = targetRaw != null ? Number(targetRaw) : null;
+  const progressLabel = target ? `${current}/${target}` : (current ? String(current) : "");
+  const iconMap = {
+    gols: "G",
+    assistencias: "A",
+    "assistências": "A",
+    zagueiro: "Z",
+    presenca: "P",
+    "presença": "P",
+    notas: "N",
+    premio: "T",
+    "prêmio": "T",
+    lendaria: "L",
+    "lendária": "L",
+  };
+  const rarityClassMap = {
+    bronze: "from-[#7a4a22]/70 to-black/70 border-[#b98244]/60 text-[#ffd6a3]",
+    prata: "from-slate-500/45 to-black/70 border-slate-300/55 text-slate-100",
+    ouro: "from-[#f5b21b]/35 to-black/70 border-[#f5b21b]/65 text-[#fff1b8]",
+    lendaria: "from-[#0b6b2a]/60 to-black/75 border-[#f5b21b]/75 text-[#fff8e8]",
+  };
+  const toneClass = rarityClassMap[safeRarity] || rarityClassMap.bronze;
+  const icon = (typeof symbol !== "undefined" && symbol) ? symbol : (iconMap[safeCategory] || "C");
+%>
+
+<article class="w-full rounded-2xl border bg-gradient-to-br <%= toneClass %> <%= isUnlocked ? 'opacity-100' : 'opacity-55 grayscale' %> p-4 text-center shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
+  <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-current/35 bg-black/35 text-xl font-black">
+    <%= icon %>
+  </div>
+  <h3 class="mt-3 text-sm font-bold leading-tight text-horriver-light"><%= safeTitle %></h3>
+  <p class="mt-1 text-[10px] uppercase tracking-[0.16em] text-current/80"><%= safeRarity %></p>
+  <% if (progressLabel) { %>
+    <p class="mt-2 text-[11px] font-semibold text-current"><%= progressLabel %></p>
+  <% } %>
+  <% if (typeof description !== "undefined" && description) { %>
+    <p class="mt-2 text-[11px] leading-snug text-horriver-gray"><%= description %></p>
+  <% } %>
+</article>
