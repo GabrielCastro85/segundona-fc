@@ -160,8 +160,9 @@ async function buildPlayerProfileViewModel(req, id) {
     return true;
   });
 
+  const brand = req.res?.locals?.brand || req.app.locals.brand || {};
   const baseUrl = process.env.SITE_URL || `${req.protocol}://${req.get("host")}`;
-  const playerImagePath = player.photoUrl || (res.locals.brand?.logoLarge || "/img/logo-512x512.png");
+  const playerImagePath = player.photoUrl || (brand.logoLarge || "/img/logo-512x512.png");
   const playerImageUrl = `${baseUrl}${req.app.locals.thumbUrl(playerImagePath, 1200)}`;
   const descParts = [
     `Jogador ${player.name}.`,
@@ -183,7 +184,7 @@ async function buildPlayerProfileViewModel(req, id) {
     ovrDelta,
     metaDescription: descParts.join(" "),
     metaImage: playerImageUrl,
-    ogTitle: `${player.name} | ${res.locals.brand?.name || "Segundona FC"}`,
+    ogTitle: `${player.name} | ${brand.name || "Segundona FC"}`,
   };
 }
 
