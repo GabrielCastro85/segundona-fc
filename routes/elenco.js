@@ -2,17 +2,9 @@ const express = require("express");
 const router = express.Router();
 const prisma = require("../utils/db");
 const { getCache, setCache } = require("../utils/page_cache");
+const { getDynamicOverallSnapshot } = require("../utils/live_overall");
 
 const ELENCO_CACHE_TTL = 5 * 60 * 1000; // 5 minutos
-
-function computeOverall(ratings) {
-  if (!ratings || !ratings.length) return 0;
-  // usa as 5 mais recentes
-  const slice = ratings.slice(0, 5);
-  const avg = slice.reduce((s, n) => s + n, 0) / slice.length;
-  // converte para escala 0-100 para exibir como OVR
-  return Math.round(avg * 10);
-}
 
 // Página de elenco (pública)
 router.get("/", async (req, res) => {
@@ -44,15 +36,32 @@ router.get("/", async (req, res) => {
       ];
     }
 
-    const players = await prisma.player.findMany({
-      where,
-      orderBy: { name: "asc" },
-      include: {
-        overallHistory: {
-          orderBy: { calculatedAt: "desc" },
-          take: 3,
+    const [playersRaw, dynamicOverall] = await Promise.all([
+      prisma.player.findMany({
+        where,
+        orderBy: { name: "asc" },
+        include: {
+          overallHistory: {
+            orderBy: { calculatedAt: "desc" },
+            take: 3,
+          },
         },
-      },
+      }),
+      getDynamicOverallSnapshot({ playerWhere: where }),
+    ]);
+
+    const players = playersRaw.map((player) => {
+      const latestHistory = player.overallHistory?.[0]?.overall;
+      const displayOverall =
+        dynamicOverall.scoreMap.get(player.id) ??
+        (latestHistory != null ? Math.round(latestHistory) : null) ??
+        (player.overallDynamic != null ? Math.round(player.overallDynamic) : null) ??
+        Math.round(player.baseOverall || 60);
+
+      return {
+        ...player,
+        displayOverall,
+      };
     });
 
     const payload = {
@@ -72,4 +81,3 @@ router.get("/", async (req, res) => {
   }
 });
 module.exports = router;
-

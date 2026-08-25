@@ -98,7 +98,9 @@
             </div>
 
             <%
-              const _pOvr = p.overallDynamic != null ? Math.round(p.overallDynamic) : (p.baseOverall ? Math.round(p.baseOverall) : null);
+              const _pOvr = p.displayOverall != null
+                ? Math.round(p.displayOverall)
+                : (p.overallDynamic != null ? Math.round(p.overallDynamic) : (p.baseOverall ? Math.round(p.baseOverall) : null));
               const _pHist = p.overallHistory || [];
               const _pTrend = _pHist.length >= 2
                 ? (_pHist[0].overall > _pHist[1].overall + 0.5 ? 'up' : _pHist[0].overall < _pHist[1].overall - 0.5 ? 'down' : 'stable')
