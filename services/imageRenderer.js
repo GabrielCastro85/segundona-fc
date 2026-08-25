@@ -1,4 +1,10 @@
 const fs = require("fs");
+const path = require("path");
+
+process.env.PUPPETEER_CACHE_DIR =
+  process.env.PUPPETEER_CACHE_DIR ||
+  path.resolve(__dirname, "..", ".cache", "puppeteer");
+
 const puppeteer = require("puppeteer");
 
 const PUPPETEER_ARGS = [

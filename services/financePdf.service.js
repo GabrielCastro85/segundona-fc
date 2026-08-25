@@ -2,6 +2,10 @@ const fs = require("fs");
 const path = require("path");
 const ejs = require("ejs");
 
+process.env.PUPPETEER_CACHE_DIR =
+  process.env.PUPPETEER_CACHE_DIR ||
+  path.resolve(__dirname, "..", ".cache", "puppeteer");
+
 let puppeteer = null;
 
 const VIEW_ROOT = path.resolve(__dirname, "..", "views");
