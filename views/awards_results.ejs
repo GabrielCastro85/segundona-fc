@@ -142,6 +142,17 @@
     border-radius: 34px;
     box-shadow: 0 24px 56px rgba(0, 0, 0, 0.28);
   }
+  .awards-preview-frame {
+    display: block;
+    width: min(720px, 100%);
+    aspect-ratio: 720 / 1280;
+    margin: 0 auto;
+    border: 0;
+    border-radius: 34px;
+    overflow: hidden;
+    background: transparent;
+    box-shadow: 0 24px 56px rgba(0, 0, 0, 0.28);
+  }
   @media (max-width: 900px) {
     .awards-export-meta {
       min-width: 0;
@@ -178,11 +189,12 @@
     </header>
 
     <figure id="awards-card" class="mx-auto max-w-[720px]">
-      <img
-        src="/share/voting-result.jpg?matchId=<%= match.id %>&preview=1&v=<%= Date.now() %>"
-        alt="Preview do resultado da votação"
-        class="awards-preview-image"
-      />
+      <iframe
+        src="/share/voting-result-html?matchId=<%= match.id %>&preview=1&v=<%= Date.now() %>"
+        title="Preview do resultado da votação"
+        class="awards-preview-frame"
+        loading="eager"
+      ></iframe>
     </figure>
 
     <div

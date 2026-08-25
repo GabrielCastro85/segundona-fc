@@ -49,6 +49,28 @@ function sendImageError(res, message = "Não foi possível gerar a imagem agora.
   return res.status(503).send(message);
 }
 
+function bufferFromDataImage(dataUrl) {
+  if (!dataUrl || !/^data:image\//i.test(dataUrl)) return null;
+  const match = String(dataUrl).match(/^data:image\/[a-z0-9.+-]+;base64,(.+)$/i);
+  if (!match) return null;
+  return Buffer.from(match[1], "base64");
+}
+
+async function compactPlayerPhotoDataUri(sourceBuffer, {
+  width = 180,
+  height = 180,
+  quality = 82,
+  fit = "cover",
+} = {}) {
+  const sharp = require("sharp");
+  const photoBuffer = await sharp(sourceBuffer)
+    .rotate()
+    .resize(width, height, { fit, position: "center" })
+    .jpeg({ quality, mozjpeg: true })
+    .toBuffer();
+  return `data:image/jpeg;base64,${photoBuffer.toString("base64")}`;
+}
+
 async function buildShareData(playerId) {
   const player = await prisma.player.findUnique({
     where: { id: playerId },
@@ -192,11 +214,6 @@ async function buildVotingData(matchId) {
   const embedPlayerPhoto = async (player) => {
     if (!player?.photoUrl) return;
 
-    if (/^data:image\//i.test(player.photoUrl)) {
-      player.photoDataUri = player.photoUrl;
-      return;
-    }
-
     const cacheKey = player.photoUrl;
     if (photoCache.has(cacheKey)) {
       player.photoDataUri = photoCache.get(cacheKey);
@@ -205,10 +222,11 @@ async function buildVotingData(matchId) {
     }
 
     try {
-      const sharp = require("sharp");
       let sourceBuffer = null;
 
-      if (/^https?:\/\//i.test(player.photoUrl)) {
+      if (/^data:image\//i.test(player.photoUrl)) {
+        sourceBuffer = bufferFromDataImage(player.photoUrl);
+      } else if (/^https?:\/\//i.test(player.photoUrl)) {
         sourceBuffer = null;
       } else {
         const rel = player.photoUrl.replace(/^\/+/, "");
@@ -224,12 +242,11 @@ async function buildVotingData(matchId) {
         return;
       }
 
-      const photoBuffer = await sharp(sourceBuffer)
-        .rotate()
-        .resize(180, 180, { fit: "cover", position: "center" })
-        .jpeg({ quality: 82, mozjpeg: true })
-        .toBuffer();
-      const dataUri = `data:image/jpeg;base64,${photoBuffer.toString("base64")}`;
+      const dataUri = await compactPlayerPhotoDataUri(sourceBuffer, {
+        width: 180,
+        height: 180,
+        quality: 82,
+      });
       photoCache.set(cacheKey, dataUri);
       player.photoDataUri = dataUri;
     } catch (err) {
@@ -284,7 +301,7 @@ router.get("/voting-result.jpg", async (req, res) => {
   console.log(`[share:voting-result] request match #${matchId}`);
 
   // Cache versionado para evitar devolver imagens antigas quando o layout muda.
-  const cacheKeyVoting = `voting-result-v7-${matchId}`;
+  const cacheKeyVoting = `voting-result-v8-${matchId}`;
   const cachedVoting = readCache(cacheKeyVoting);
   if (cachedVoting) {
     console.log(`[share:voting-result] cache hit match #${matchId} (${Date.now() - t0}ms)`);
@@ -300,17 +317,9 @@ router.get("/voting-result.jpg", async (req, res) => {
     if (!data) return res.status(404).send("Pelada ou dados de votação não encontrados");
 
     const baseUrl = `${req.protocol}://${req.get("host")}`;
-    const logoDataUri = await getLineupLogoDataUri();
-    const html = await ejs.renderFile(VOTING_TEMPLATE, {
-      ...data,
-      brand: res.locals.brand || req.app.locals.brand,
-      baseUrl,
-      logoMarkUrl: logoDataUri,
-      logoIconUrl: logoDataUri,
-      fontCss: getLineupFontCss(),
-    });
-    const buf = await renderImageFromHtml({
-      html,
+    const renderUrl = `${baseUrl}/share/voting-result-html?matchId=${matchId}&export=1`;
+    const buf = await renderImageFromUrl({
+      url: renderUrl,
       selector: ".vrc-card",
       width: 720,
       height: 1280,
@@ -389,7 +398,16 @@ async function embedMonthlyWinnerPhoto(winner) {
   if (!winner?.photoUrl || /^https?:\/\//i.test(winner.photoUrl)) return;
 
   if (/^data:image\//i.test(winner.photoUrl)) {
-    winner.photoDataUri = winner.photoUrl;
+    const sourceBuffer = bufferFromDataImage(winner.photoUrl);
+    if (!sourceBuffer) {
+      winner.photoUrl = null;
+      return;
+    }
+    winner.photoDataUri = await compactPlayerPhotoDataUri(sourceBuffer, {
+      width: 260,
+      height: 340,
+      quality: 86,
+    });
     return;
   }
 
