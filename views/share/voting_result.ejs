@@ -9,6 +9,7 @@
   const photoUrl = (player) => {
     if (player?.photoDataUri) return player.photoDataUri;
     if (!player?.photoUrl) return baseUrl + '/img/logo-128x128.png';
+    if (/^data:image\//i.test(player.photoUrl)) return player.photoUrl;
     if (/^https?:\/\//i.test(player.photoUrl)) return player.photoUrl;
     return baseUrl + '/' + String(player.photoUrl).replace(/^\/+/, '');
   };

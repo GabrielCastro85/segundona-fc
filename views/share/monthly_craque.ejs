@@ -7,7 +7,9 @@
   const photoSrc = winner && winner.photoDataUri
     ? winner.photoDataUri
     : winner && winner.photoUrl
-      ? (/^https?:\/\//i.test(winner.photoUrl)
+      ? (/^data:image\//i.test(winner.photoUrl)
+          ? winner.photoUrl
+          : /^https?:\/\//i.test(winner.photoUrl)
           ? winner.photoUrl
           : baseUrl + '/' + String(winner.photoUrl).replace(/^\/+/, ''))
       : null;

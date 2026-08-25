@@ -25,7 +25,11 @@
       ovrTrend:     ovrTrend,
       ovrDelta:     ovrDelta,
       achievements: achievements,
-      photoUrl:     player.photoUrl && !/^https?:\/\//i.test(player.photoUrl) ? (baseUrl + player.photoUrl) : null,
+      photoUrl:     player.photoUrl
+        ? (/^data:image\//i.test(player.photoUrl) || /^https?:\/\//i.test(player.photoUrl)
+            ? player.photoUrl
+            : baseUrl + player.photoUrl)
+        : null,
       logoSmall:    typeof logoSmall !== 'undefined' && logoSmall ? logoSmall : baseUrl + '/img/logo-32x32.png',
       logoWatermark: typeof logoWatermark !== 'undefined' && logoWatermark ? logoWatermark : baseUrl + '/img/logo-128x128.png',
       scale: 2,

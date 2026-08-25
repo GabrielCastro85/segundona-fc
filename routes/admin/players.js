@@ -1,4 +1,6 @@
 const express = require("express");
+const fs = require("fs");
+const path = require("path");
 const prisma = require("../../utils/db");
 const { uploadPlayerPhoto, processUploadedImage } = require("../../utils/upload");
 const { deleteCache } = require("../../utils/page_cache");
@@ -7,6 +9,32 @@ const router = express.Router();
 function requireAdmin(req, res, next) {
   if (!req.admin) return res.redirect("/login");
   next();
+}
+
+function mimeFromFile(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  if (ext === ".png") return "image/png";
+  if (ext === ".webp") return "image/webp";
+  if (ext === ".svg") return "image/svg+xml";
+  return "image/jpeg";
+}
+
+async function persistPlayerPhoto(file) {
+  if (!file?.path) return null;
+
+  let optimizedPath = file.path;
+  try {
+    const newFilename = await processUploadedImage(file.path, "player");
+    optimizedPath = path.join(path.dirname(file.path), newFilename);
+    const buffer = await fs.promises.readFile(optimizedPath);
+    const mime = mimeFromFile(optimizedPath);
+    return `data:${mime};base64,${buffer.toString("base64")}`;
+  } finally {
+    await fs.promises.unlink(optimizedPath).catch(() => {});
+    if (optimizedPath !== file.path) {
+      await fs.promises.unlink(file.path).catch(() => {});
+    }
+  }
 }
 
 // ==============================
@@ -35,8 +63,7 @@ router.post(
 
       let photoUrl = null;
       if (req.file) {
-        const newFilename = await processUploadedImage(req.file.path, "player");
-        photoUrl = `/uploads/players/${newFilename}`;
+        photoUrl = await persistPlayerPhoto(req.file);
       }
 
       const baseOv = Math.round(Number(baseOverall));
@@ -119,8 +146,7 @@ router.post(
 
       let photoUrl = null;
       if (req.file) {
-        const newFilename = await processUploadedImage(req.file.path, "player");
-        photoUrl = `/uploads/players/${newFilename}`;
+        photoUrl = await persistPlayerPhoto(req.file);
       }
 
       const data = {

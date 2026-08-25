@@ -3,6 +3,7 @@ const express = require("express");
 const router = express.Router();
 const prisma = require("../utils/db");
 const { resolveOverallScore } = require("../utils/overall");
+const { getDynamicOverallSnapshot } = require("../utils/live_overall");
 const { computeMatchRatingsAndAwards } = require("../utils/match_ratings");
 
 const cache = new Map();
@@ -430,9 +431,13 @@ router.get("/", async (req, res) => {
         return b.matches - a.matches;
       });
 
-    // ======= OVERALL — campo salvo (mesma fonte do sorteador) =======
+    // ======= OVERALL — mesma fonte dinâmica usada no perfil do jogador =======
     // Ignora filtros de data; aplica só filtro de posição (playerWhere).
-    // Fonte: player.overallDynamic → player.baseOverall → 60 (resolveOverallScore).
+    // Fonte: últimas peladas calculadas → override manual → base → 60.
+    const { scoreMap: dynamicOverallMap } = await getDynamicOverallSnapshot({
+      playerWhere,
+    });
+
     const overallPlayers = await prisma.player.findMany({
       where: playerWhere,
       select: {
@@ -446,10 +451,9 @@ router.get("/", async (req, res) => {
       },
     });
     const overallRanking = overallPlayers
-      .filter((p) => p.overallDynamic != null || p.baseOverall != null)
       .map((p) => ({
         player: p,
-        overallScore: Math.round(resolveOverallScore(p, null)),
+        overallScore: Math.round(dynamicOverallMap.get(p.id) ?? resolveOverallScore(p, null)),
       }))
       .sort((a, b) => {
         if (b.overallScore !== a.overallScore) return b.overallScore - a.overallScore;

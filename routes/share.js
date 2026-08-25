@@ -102,6 +102,7 @@ router.get("/player-card-test-html", async (req, res) => {
     const logoDataUri = await getLineupLogoDataUri();
     const html = await ejs.renderFile(TEMPLATE, {
       ...data,
+      brand: res.locals.brand || req.app.locals.brand,
       baseUrl,
       fontCss: getLineupFontCss(),
       logoSmall: logoDataUri,
@@ -125,7 +126,7 @@ router.get("/player-card-test.jpg", async (req, res) => {
   console.log(`[share:player-card] request player #${playerId}`);
 
   // Cache de 1 hora (dados do jogador podem mudar)
-  const cacheKey = `player-card-v3-${playerId}`;
+  const cacheKey = `player-card-v4-${playerId}`;
   const cached = readCache(cacheKey, 60 * 60 * 1000);
   if (cached) {
     console.log(`[share:player-card] cache hit player #${playerId} (${Date.now() - t0}ms)`);
@@ -141,6 +142,7 @@ router.get("/player-card-test.jpg", async (req, res) => {
     const logoDataUri = await getLineupLogoDataUri();
     const html = await ejs.renderFile(TEMPLATE, {
       ...data,
+      brand: res.locals.brand || req.app.locals.brand,
       baseUrl: host,
       fontCss: getLineupFontCss(),
       logoSmall: logoDataUri,
@@ -189,6 +191,11 @@ async function buildVotingData(matchId) {
   const photoCache = new Map();
   const embedPlayerPhoto = async (player) => {
     if (!player?.photoUrl) return;
+
+    if (/^data:image\//i.test(player.photoUrl)) {
+      player.photoDataUri = player.photoUrl;
+      return;
+    }
 
     const cacheKey = player.photoUrl;
     if (photoCache.has(cacheKey)) {
@@ -381,6 +388,11 @@ async function buildMonthlyCraqueData(sessionId) {
 async function embedMonthlyWinnerPhoto(winner) {
   if (!winner?.photoUrl || /^https?:\/\//i.test(winner.photoUrl)) return;
 
+  if (/^data:image\//i.test(winner.photoUrl)) {
+    winner.photoDataUri = winner.photoUrl;
+    return;
+  }
+
   try {
     const sharp = require("sharp");
     const rel = String(winner.photoUrl).replace(/^\/+/, "");
@@ -443,7 +455,7 @@ router.get("/monthly-craque.jpg", async (req, res) => {
   console.log(`[share:craque-mes] request session #${sessionId}`);
 
   // Cache permanente — vencedor não muda após sessão encerrada
-  const cacheKeyCraque = `monthly-craque-v8-${sessionId}`;
+  const cacheKeyCraque = `monthly-craque-v9-${sessionId}`;
   const cachedCraque = readCache(cacheKeyCraque);
   if (cachedCraque) {
     console.log(`[share:craque-mes] cache hit session #${sessionId} (${Date.now() - t0}ms)`);
