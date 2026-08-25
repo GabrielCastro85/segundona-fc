@@ -49,15 +49,6 @@ function sendImageError(res, message = "Não foi possível gerar a imagem agora.
   return res.status(503).send(message);
 }
 
-function sendImageDebugError(req, res, err, message) {
-  if (req.query.debug === "1") {
-    res.setHeader("Content-Type", "text/plain; charset=utf-8");
-    return res.status(503).send(`${message}\n\n${err?.message || err}\n\n${err?.stack || ""}`);
-  }
-
-  return sendImageError(res, message);
-}
-
 function bufferFromDataImage(dataUrl) {
   if (!dataUrl || !/^data:image\//i.test(dataUrl)) return null;
   const match = String(dataUrl).match(/^data:image\/[a-z0-9.+-]+;base64,(.+)$/i);
@@ -347,7 +338,7 @@ router.get("/voting-result.jpg", async (req, res) => {
     return sendJpeg(res, buf, `resultado-votacao-${dateLabel}.jpg`);
   } catch (err) {
     console.error(`[share:voting-result] Erro match #${matchId}:`, err);
-    if (!res.headersSent) return sendImageDebugError(req, res, err, "Não foi possível gerar a imagem agora. Tente novamente em alguns segundos.");
+    if (!res.headersSent) return sendImageError(res);
   }
 });
 
