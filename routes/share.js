@@ -318,7 +318,7 @@ router.get("/voting-result.jpg", async (req, res) => {
   console.log(`[share:voting-result] request match #${matchId}`);
 
   // Cache versionado para evitar devolver imagens antigas quando o layout muda.
-  const cacheKeyVoting = `voting-result-v16-${matchId}`;
+  const cacheKeyVoting = `voting-result-v17-${matchId}`;
   const cachedVoting = readCache(cacheKeyVoting);
   if (cachedVoting) {
     console.log(`[share:voting-result] cache hit match #${matchId} (${Date.now() - t0}ms)`);
@@ -334,9 +334,20 @@ router.get("/voting-result.jpg", async (req, res) => {
     if (!data) return res.status(404).send("Pelada ou dados de votação não encontrados");
 
     const baseUrl = `${req.protocol}://${req.get("host")}`;
-    const renderUrl = `${baseUrl}/share/voting-result-html?matchId=${matchId}&export=1`;
-    const buf = await renderImageFromUrl({
-      url: renderUrl,
+    const logoDataUri = await getLineupLogoDataUri();
+    const selectionFieldDataUri = await getWeeklySelectionFieldDataUri();
+    const html = await ejs.renderFile(VOTING_TEMPLATE, {
+      ...data,
+      brand: res.locals.brand || req.app.locals.brand,
+      baseUrl,
+      logoMarkUrl: logoDataUri,
+      logoIconUrl: logoDataUri,
+      selectionFieldUrl: selectionFieldDataUri,
+      fontCss: getLineupFontCss(),
+    });
+
+    const buf = await renderImageFromHtml({
+      html,
       selector: ".vrc-card",
       width: 720,
       height: 1280,
