@@ -290,12 +290,14 @@ router.get("/voting-result-html", async (req, res) => {
 
     const baseUrl = `${req.protocol}://${req.get("host")}`;
     const logoDataUri = await getLineupLogoDataUri();
+    const selectionFieldDataUri = await getWeeklySelectionFieldDataUri();
     const html = await ejs.renderFile(VOTING_TEMPLATE, {
       ...data,
       brand: res.locals.brand || req.app.locals.brand,
       baseUrl,
       logoMarkUrl: logoDataUri,
       logoIconUrl: logoDataUri,
+      selectionFieldUrl: selectionFieldDataUri,
       fontCss: getLineupFontCss(),
     });
 
@@ -316,7 +318,7 @@ router.get("/voting-result.jpg", async (req, res) => {
   console.log(`[share:voting-result] request match #${matchId}`);
 
   // Cache versionado para evitar devolver imagens antigas quando o layout muda.
-  const cacheKeyVoting = `voting-result-v15-${matchId}`;
+  const cacheKeyVoting = `voting-result-v16-${matchId}`;
   const cachedVoting = readCache(cacheKeyVoting);
   if (cachedVoting) {
     console.log(`[share:voting-result] cache hit match #${matchId} (${Date.now() - t0}ms)`);
@@ -539,6 +541,7 @@ router.get("/monthly-craque.png", (req, res) => {
 const LINEUP_TEMPLATE = path.join(__dirname, "../views/share/lineup_card.ejs");
 const TIERLIST_TEMPLATE = path.join(__dirname, "../views/share/tierlist_card.ejs");
 const LINEUP_LOGO_SOURCE = path.join(__dirname, "../public/img/logo-512x512.png");
+const WEEKLY_SELECTION_FIELD_SOURCE = path.join(__dirname, "../public/img/weekly-selection-field.jpg");
 const LINEUP_FONT_FILES = [
   { family: "Bebas Neue", weight: "400", filename: "BebasNeue-Regular.ttf" },
   { family: "Manrope", weight: "400", filename: "Manrope-Regular.ttf" },
@@ -547,6 +550,7 @@ const LINEUP_FONT_FILES = [
   { family: "Manrope", weight: "800 900", filename: "Manrope-ExtraBold.ttf" },
 ];
 let lineupLogoDataUriPromise = null;
+let weeklySelectionFieldDataUriPromise = null;
 let lineupFontCss = null;
 
 async function getLineupLogoDataUri() {
@@ -566,6 +570,19 @@ async function getLineupLogoDataUri() {
   }
 
   return lineupLogoDataUriPromise;
+}
+
+async function getWeeklySelectionFieldDataUri() {
+  if (!weeklySelectionFieldDataUriPromise) {
+    weeklySelectionFieldDataUriPromise = fs.promises.readFile(WEEKLY_SELECTION_FIELD_SOURCE)
+      .then((buffer) => `data:image/jpeg;base64,${buffer.toString("base64")}`)
+      .catch((err) => {
+        weeklySelectionFieldDataUriPromise = null;
+        throw err;
+      });
+  }
+
+  return weeklySelectionFieldDataUriPromise;
 }
 
 function getLineupFontCss() {

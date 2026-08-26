@@ -31,6 +31,9 @@
     const group = weeklySelectionGroups.find(item => item.key === key || item.positionGroup === key);
     return { key, players: group && Array.isArray(group.players) ? group.players : [] };
   }).filter(row => row.players.length);
+  const fieldBackgroundSrc = typeof selectionFieldUrl !== 'undefined' && selectionFieldUrl
+    ? selectionFieldUrl
+    : baseUrl + '/img/weekly-selection-field.jpg';
   const selectionPlayer = (item) => item?.player || item?.matchGuest || item || null;
   const selectionLabel = (key) => ({ GOL: 'Goleiro', ZAG: 'Zagueiros', MEI: 'Meias', ATA: 'Atacantes' }[key] || key);
   const highlights = hasWeeklySelection ? [] : [
@@ -386,7 +389,7 @@
       border: 1px solid rgba(245, 178, 27,0.22);
       background:
         linear-gradient(180deg, rgba(3, 18, 8,0.08), rgba(0,0,0,0.22)),
-        url("<%= baseUrl %>/img/weekly-selection-field.jpg") center center / cover no-repeat;
+        url("<%= fieldBackgroundSrc %>") center center / cover no-repeat;
       box-shadow:
         inset 0 0 0 1px rgba(255,255,255,0.035),
         inset 0 -80px 110px rgba(0,0,0,0.42);
