@@ -205,9 +205,23 @@ async function buildVotingData(matchId) {
   const result = await computeMatchRatingsAndAwards(matchId);
   if (result.error) return null;
 
-  const topScores = Array.from(result.scores.values())
+  const regularScores = Array.from(result.scores.values());
+  const guestScores = result.guestScores && typeof result.guestScores.values === "function"
+    ? Array.from(result.guestScores.values()).map((score) => ({
+        ...score,
+        player: {
+          ...(score.matchGuest || {}),
+          isGuest: true,
+        },
+      }))
+    : [];
+  const topScores = [...regularScores, ...guestScores]
     .sort((a, b) => b.finalRating - a.finalRating)
     .slice(0, 5);
+  const weeklySelection = Array.isArray(result.weeklySelection) ? result.weeklySelection : [];
+  const weeklySelectionPlayers = weeklySelection.flatMap((group) =>
+    Array.isArray(group.players) ? group.players : []
+  );
 
   const publicDir = path.resolve(__dirname, "../public");
   const photoCache = new Map();
@@ -259,9 +273,10 @@ async function buildVotingData(matchId) {
   await Promise.all([
     ...topScores.map((score) => embedPlayerPhoto(score.player)),
     ...Object.values(result.awards || {}).map((award) => embedPlayerPhoto(award?.player)),
+    ...weeklySelectionPlayers.map((item) => embedPlayerPhoto(item.player || item.matchGuest || item)),
   ]);
 
-  return { match, awards: result.awards, topScores };
+  return { match, awards: result.awards, topScores, weeklySelection };
 }
 
 // ── Debug: renderiza o HTML do card de votação no browser ──────────────────
@@ -301,7 +316,7 @@ router.get("/voting-result.jpg", async (req, res) => {
   console.log(`[share:voting-result] request match #${matchId}`);
 
   // Cache versionado para evitar devolver imagens antigas quando o layout muda.
-  const cacheKeyVoting = `voting-result-v8-${matchId}`;
+  const cacheKeyVoting = `voting-result-v15-${matchId}`;
   const cachedVoting = readCache(cacheKeyVoting);
   if (cachedVoting) {
     console.log(`[share:voting-result] cache hit match #${matchId} (${Date.now() - t0}ms)`);

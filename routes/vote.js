@@ -5,6 +5,10 @@ const router = express.Router();
 const prisma = require("../utils/db");
 const rateLimit = require("express-rate-limit");
 const { detectSuspiciousVotePattern } = require("../helpers/weeklyVoteValidation.helper");
+const {
+  normalizePositionGroup,
+  syncMatchGuestsFromLatestLineup,
+} = require("../utils/weekly_selection");
 
 const voteLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -53,6 +57,9 @@ async function decoratePlayersWithLineup(matchId, players) {
   });
 
   const playerById = new Map(players.map((player) => [String(player.id), player]));
+  players.forEach((player) => {
+    if (player.lineupKey) playerById.set(String(player.lineupKey), player);
+  });
   const ordered = [];
   const included = new Set();
 
@@ -153,6 +160,8 @@ async function loadContext(tokenValue) {
     const label = normalizePosition(s.player.position);
     return {
       id: s.player.id,
+      voteKey: `player_${s.player.id}`,
+      candidateType: "player",
       name: s.player.name,
       nickname: s.player.nickname,
       position: s.player.position,
@@ -165,10 +174,28 @@ async function loadContext(tokenValue) {
       appearedInPhoto: !!s.appearedInPhoto,
     };
   });
+  const matchGuests = await syncMatchGuestsFromLatestLineup(token.session.matchId);
+  const guestCandidates = matchGuests.map((guest) => ({
+    id: guest.id,
+    voteKey: `guest_${guest.id}`,
+    lineupKey: guest.guestKey,
+    candidateType: "guest",
+    isGuest: true,
+    name: guest.name,
+    nickname: guest.nickname,
+    position: guest.position,
+    positionLabel: normalizePositionGroup(guest.position),
+    photoUrl: guest.photoUrl || null,
+    goals: 0,
+    assists: 0,
+    saves: null,
+    rating: null,
+    appearedInPhoto: false,
+  }));
   const filteredPlayers = token.player
     ? playersRaw.filter((p) => p.id !== token.player.id)
     : playersRaw;
-  const players = await decoratePlayersWithLineup(token.session.matchId, filteredPlayers);
+  const players = await decoratePlayersWithLineup(token.session.matchId, [...filteredPlayers, ...guestCandidates]);
   if (!players.length) {
     return { error: "Nenhum jogador disponível para votar." };
   }
@@ -230,10 +257,11 @@ router.post("/:token", voteLimiter, async (req, res) => {
   try {
     const players = ctx.players;
     const ratings = [];
+    const guestRatings = [];
     let missing = false;
 
     players.forEach((p) => {
-      const key = `rating_${p.id}`;
+      const key = `rating_${p.voteKey || p.id}`;
       const raw = req.body[key];
       if (raw == null || raw === "") {
         missing = true;
@@ -244,10 +272,14 @@ router.post("/:token", voteLimiter, async (req, res) => {
         missing = true;
         return;
       }
-      ratings.push({ playerId: p.id, rating });
+      if (p.candidateType === "guest") {
+        guestRatings.push({ matchGuestId: p.id, rating });
+      } else {
+        ratings.push({ playerId: p.id, rating });
+      }
     });
 
-    if (missing || ratings.length !== players.length) {
+    if (missing || ratings.length + guestRatings.length !== players.length) {
       return res.render("vote_token", {
         title: "Votação",
         error: "Preencha todas as notas de 1 a 5 para continuar.",
@@ -260,7 +292,14 @@ router.post("/:token", voteLimiter, async (req, res) => {
       });
     }
 
-    const validation = detectSuspiciousVotePattern(ratings);
+    const validationRatings = [
+      ...ratings,
+      ...guestRatings.map((vote) => ({
+        playerId: `guest_${vote.matchGuestId}`,
+        rating: vote.rating,
+      })),
+    ];
+    const validation = detectSuspiciousVotePattern(validationRatings);
 
     await prisma.$transaction(async (tx) => {
       await tx.voteBallot.create({
@@ -271,6 +310,9 @@ router.post("/:token", voteLimiter, async (req, res) => {
           invalidReason: validation.invalidReason,
           ratings: {
             create: ratings,
+          },
+          guestRatings: {
+            create: guestRatings,
           },
         },
       });

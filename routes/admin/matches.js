@@ -12,6 +12,10 @@ const {
 } = require("../../helpers/weeklyVoteValidation.helper");
 const { deleteCache } = require("../../utils/page_cache");
 const { getDynamicOverallSnapshot } = require("../../utils/live_overall");
+const {
+  persistWeeklySelection,
+  syncMatchGuestsFromLatestLineup,
+} = require("../../utils/weekly_selection");
 const { uploadWeeklyTeamPhoto } = require("../../utils/upload");
 const { formatDateBR } = require("../../utils/finance");
 const brand = require("../../config/brand");
@@ -1497,6 +1501,8 @@ router.post("/matches/:id/vote-session", requireAdmin, async (req, res) => {
       return res.redirect(`/admin/matches/${matchId}?error=noPresentPlayers`);
     }
 
+    await syncMatchGuestsFromLatestLineup(matchId);
+
     const tokensData = statsPresent.map((s) => ({
       token: crypto.randomBytes(16).toString("hex"),
       playerId: s.playerId,
@@ -1539,7 +1545,12 @@ router.post("/matches/:id/close-votes", requireAdmin, async (req, res) => {
       data: { expiresAt: new Date() },
     });
 
+    await syncMatchGuestsFromLatestLineup(matchId);
+
     const result = await computeMatchRatingsAndAwards(matchId);
+    if (!result.error && result.weeklySelection) {
+      await persistWeeklySelection(matchId, result.weeklySelection);
+    }
     if (
       !result.error &&
       result.publicVotes &&
@@ -2018,6 +2029,8 @@ router.post("/matches/:id/save-lineup", requireAdmin, async (req, res) => {
       },
     });
 
+    await syncMatchGuestsFromLatestLineup(matchId);
+
     return res.json({ ok: true, lineupId: saved.id });
   } catch (err) {
     console.error("Erro ao salvar lineup manualmente:", err);
@@ -2081,6 +2094,9 @@ router.post("/matches/:id/calculate-results", requireAdmin, async (req, res) => 
 
     if (updates.length) {
       await prisma.$transaction(updates);
+    }
+    if (result.weeklySelection) {
+      await persistWeeklySelection(matchId, result.weeklySelection);
     }
 
     await prisma.match.update({

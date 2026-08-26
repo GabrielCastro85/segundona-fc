@@ -77,6 +77,7 @@ model Player {
   voteRankings              VoteRanking[]
   voteTokens                VoteToken[]
   voteRatings               VoteRating[]
+  weeklySelectionEntries    WeeklySelectionEntry[]
   monthlyVoteTokens         MonthlyVoteToken[]
   monthlyVoteChoices        MonthlyVoteBallot[]    @relation("MonthlyVoteCandidate")
   weeklyAwards              WeeklyAward[]          @relation("WeeklyBest")
@@ -85,22 +86,24 @@ model Player {
 }
 
 model Match {
-  id            Int            @id @default(autoincrement())
-  playedAt      DateTime
-  description   String?
-  winnerTeam    String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  votingToken   String?
-  votingStatus  String?        @default("CLOSED")
-  winnerColor   String?
-  lineupDraws   LineupDraw[]
-  stats         PlayerStat[]
-  VoteLink      VoteLink[]
-  voteSessions  VoteSession[]
-  weeklyAwards  WeeklyAward[]  @relation("WeeklyMatch")
-  tournament    Tournament?
-  guestPayments GuestPayment[]
+  id                     Int                    @id @default(autoincrement())
+  playedAt               DateTime
+  description            String?
+  winnerTeam             String?
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+  votingToken            String?
+  votingStatus           String?                @default("CLOSED")
+  winnerColor            String?
+  lineupDraws            LineupDraw[]
+  stats                  PlayerStat[]
+  guests                 MatchGuest[]
+  VoteLink               VoteLink[]
+  voteSessions           VoteSession[]
+  weeklySelectionEntries WeeklySelectionEntry[]
+  weeklyAwards           WeeklyAward[]          @relation("WeeklyMatch")
+  tournament             Tournament?
+  guestPayments          GuestPayment[]
 
   @@index([playedAt])
 }
@@ -170,6 +173,25 @@ model PlayerStat {
   @@index([matchId])
 }
 
+model MatchGuest {
+  id                     Int                    @id @default(autoincrement())
+  matchId                Int
+  guestKey               String
+  name                   String
+  nickname               String?
+  position               String
+  photoUrl               String?
+  strength               Int                    @default(60)
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+  match                  Match                  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  voteRatings            VoteGuestRating[]
+  weeklySelectionEntries WeeklySelectionEntry[]
+
+  @@unique([matchId, guestKey])
+  @@index([matchId])
+}
+
 model WeeklyAward {
   id             Int      @id @default(autoincrement())
   weekStart      DateTime @unique
@@ -179,6 +201,29 @@ model WeeklyAward {
   createdAt      DateTime @default(now())
   bestPlayer     Player?  @relation("WeeklyBest", fields: [bestPlayerId], references: [id])
   winningMatch   Match?   @relation("WeeklyMatch", fields: [winningMatchId], references: [id])
+}
+
+model WeeklySelectionEntry {
+  id            Int         @id @default(autoincrement())
+  matchId       Int
+  positionGroup String
+  slot          Int
+  playerId      Int?
+  matchGuestId  Int?
+  finalRating   Float       @default(0)
+  votesCount    Int         @default(0)
+  goals         Int         @default(0)
+  assists       Int         @default(0)
+  saves         Int?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  match         Match       @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  player        Player?     @relation(fields: [playerId], references: [id])
+  matchGuest    MatchGuest? @relation(fields: [matchGuestId], references: [id])
+
+  @@unique([matchId, positionGroup, slot])
+  @@index([playerId])
+  @@index([matchGuestId])
 }
 
 model MonthlyAward {
@@ -231,18 +276,19 @@ model VoteToken {
 }
 
 model VoteBallot {
-  id                  Int           @id @default(autoincrement())
-  voteTokenId         Int           @unique
+  id                  Int               @id @default(autoincrement())
+  voteTokenId         Int               @unique
   bestOverallPlayerId Int?
-  isInvalid           Boolean       @default(false)
+  isInvalid           Boolean           @default(false)
   invalidReason       String?
   invalidCode         String?
-  validatedManually   Boolean       @default(false)
+  validatedManually   Boolean           @default(false)
   validatedManuallyAt DateTime?
-  createdAt           DateTime      @default(now())
-  bestOverallPlayer   Player?       @relation("BestOverallPlayer", fields: [bestOverallPlayerId], references: [id])
-  token               VoteToken     @relation(fields: [voteTokenId], references: [id])
+  createdAt           DateTime          @default(now())
+  bestOverallPlayer   Player?           @relation("BestOverallPlayer", fields: [bestOverallPlayerId], references: [id])
+  token               VoteToken         @relation(fields: [voteTokenId], references: [id])
   rankings            VoteRanking[]
+  guestRatings        VoteGuestRating[]
   ratings             VoteRating[]
 
   @@index([isInvalid])
@@ -260,6 +306,19 @@ model VoteRating {
 
   @@unique([voteBallotId, playerId])
   @@index([playerId])
+}
+
+model VoteGuestRating {
+  id           Int        @id @default(autoincrement())
+  voteBallotId Int
+  matchGuestId Int
+  rating       Int
+  createdAt    DateTime   @default(now())
+  matchGuest   MatchGuest @relation(fields: [matchGuestId], references: [id], onDelete: Cascade)
+  ballot       VoteBallot @relation(fields: [voteBallotId], references: [id], onDelete: Cascade)
+
+  @@unique([voteBallotId, matchGuestId])
+  @@index([matchGuestId])
 }
 
 model VoteRanking {
