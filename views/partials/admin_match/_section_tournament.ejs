@@ -52,11 +52,12 @@
       FINAL: "Final",
     };
     const teamLabelPrefix = (typeof brand !== "undefined" && brand.teamPrefix) ? brand.teamPrefix : "Time";
+    const teamNamesByColor = (typeof brand !== "undefined" && brand.teamNamesByColor) ? brand.teamNamesByColor : {};
     const sponsorNameByLabel = {
-      Amarelo: `${teamLabelPrefix} 1`,
-      Vermelho: `${teamLabelPrefix} 2`,
-      Azul: `${teamLabelPrefix} 3`,
-      Preto: `${teamLabelPrefix} 4`,
+      Amarelo: teamNamesByColor.Amarelo || `${teamLabelPrefix} 1`,
+      Vermelho: teamNamesByColor.Vermelho || `${teamLabelPrefix} 2`,
+      Azul: teamNamesByColor.Azul || `${teamLabelPrefix} 3`,
+      Preto: teamNamesByColor.Preto || `${teamLabelPrefix} 4`,
     };
     const sponsorStyleByLabel = {
       Amarelo: "color: #facc15;",
@@ -159,10 +160,10 @@
       >
         <%
           const sponsorDefaults = [
-            { name: `${teamLabelPrefix} 1`, color: "#facc15" },
-            { name: `${teamLabelPrefix} 2`, color: "#ef4444" },
-            { name: `${teamLabelPrefix} 3`, color: "#3b82f6" },
-            { name: `${teamLabelPrefix} 4`, color: "#18181b" },
+            { name: sponsorNameByLabel.Amarelo, color: "#facc15" },
+            { name: sponsorNameByLabel.Vermelho, color: "#ef4444" },
+            { name: sponsorNameByLabel.Azul, color: "#3b82f6" },
+            { name: sponsorNameByLabel.Preto, color: "#18181b" },
           ];
         %>
         <% sponsorDefaults.forEach((sponsor, idx) => { %>

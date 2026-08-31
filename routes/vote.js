@@ -3,6 +3,7 @@ const express = require("express");
 const crypto = require("crypto");
 const router = express.Router();
 const prisma = require("../utils/db");
+const brand = require("../config/brand");
 const rateLimit = require("express-rate-limit");
 const { detectSuspiciousVotePattern } = require("../helpers/weeklyVoteValidation.helper");
 const {
@@ -40,6 +41,19 @@ function normalizeTeamColorName(value, fallbackIndex = 0) {
   return ["Amarelo", "Azul", "Preto", "Vermelho"][fallbackIndex % 4];
 }
 
+function isGenericTeamName(value = "") {
+  return /^time(?:\s+\d+|\s+(amarelo|vermelho|azul|preto|branco|laranja))?$/i.test(
+    String(value || "").trim()
+  );
+}
+
+function displayTeamName(team, colorName) {
+  const configuredName = brand.teamNamesByColor?.[colorName];
+  const rawName = String(team?.name || "").trim();
+  if (configuredName && (!rawName || isGenericTeamName(rawName))) return configuredName;
+  return rawName || configuredName || `Time ${colorName}`;
+}
+
 function positionRank(position = "") {
   const value = String(position).toLowerCase();
   if (value.includes("gol")) return 0;
@@ -67,7 +81,7 @@ async function decoratePlayersWithLineup(matchId, players) {
     latestLineup.result.teams.forEach((team, teamIndex) => {
       const colorName = normalizeTeamColorName(team?.colorName || team?.name, teamIndex);
       const theme = TEAM_COLOR_THEMES[colorName] || TEAM_COLOR_THEMES.Laranja;
-      const teamName = team?.name || `Time ${colorName}`;
+      const teamName = displayTeamName(team, colorName);
       const teamPlayers = (Array.isArray(team?.players) ? team.players : [])
         .map((entry) => playerById.get(String(entry?.id)))
         .filter(Boolean)

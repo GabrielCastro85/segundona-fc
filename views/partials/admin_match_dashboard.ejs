@@ -22,6 +22,15 @@
     if (raw.includes("branco")) return "Branco";
     return ["Amarelo", "Azul", "Preto", "Vermelho"][idx % 4];
   };
+  const teamNamesByColorForStats = (typeof brand !== "undefined" && brand.teamNamesByColor) ? brand.teamNamesByColor : {};
+  const isGenericTeamNameForStats = (value = "") =>
+    /^time(?:\s+\d+|\s+(amarelo|vermelho|azul|preto|branco))?$/i.test(String(value || "").trim());
+  const displayTeamNameForStats = (team, colorName) => {
+    const configuredName = teamNamesByColorForStats[colorName];
+    const rawName = String(team?.name || "").trim();
+    if (configuredName && (!rawName || isGenericTeamNameForStats(rawName))) return configuredName;
+    return rawName || configuredName || `Time ${colorName}`;
+  };
   const positionRank = (position = "") => {
     const value = String(position).toLowerCase();
     if (value.includes("gol")) return 0;
@@ -42,7 +51,7 @@
             .filter((player) => presentPlayerIdSet.has(player.id))
             .sort((a, b) => positionRank(a.position) - positionRank(b.position) || a.name.localeCompare(b.name, "pt-BR"));
           return {
-            name: team.name || `Time ${colorName}`,
+            name: displayTeamNameForStats(team, colorName),
             colorName,
             theme,
             players: teamPlayers,

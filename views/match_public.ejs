@@ -283,11 +283,12 @@
       FINAL: "Final",
     };
     const teamLabelPrefix = (typeof brand !== "undefined" && brand.teamPrefix) ? brand.teamPrefix : "Time";
+    const teamNamesByColor = (typeof brand !== "undefined" && brand.teamNamesByColor) ? brand.teamNamesByColor : {};
     const sponsorNameByLabel = {
-      Amarelo: `${teamLabelPrefix} 1`,
-      Vermelho: `${teamLabelPrefix} 2`,
-      Azul: `${teamLabelPrefix} 3`,
-      Preto: `${teamLabelPrefix} 4`,
+      Amarelo: teamNamesByColor.Amarelo || `${teamLabelPrefix} 1`,
+      Vermelho: teamNamesByColor.Vermelho || `${teamLabelPrefix} 2`,
+      Azul: teamNamesByColor.Azul || `${teamLabelPrefix} 3`,
+      Preto: teamNamesByColor.Preto || `${teamLabelPrefix} 4`,
     };
     const sponsorStyleByLabel = {
       Amarelo: "color: #facc15;",

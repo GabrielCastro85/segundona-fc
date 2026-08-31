@@ -18,6 +18,10 @@
   const logoIconSrc = typeof logoIconUrl !== "undefined" && logoIconUrl
     ? logoIconUrl
     : `${cleanBaseUrl}/img/logo-32x32.png`;
+  const configuredFooterUrl = String(safeBrand.url || "").trim();
+  const footerUrl = configuredFooterUrl && !/localhost|127\.0\.0\.1/i.test(configuredFooterUrl)
+    ? configuredFooterUrl
+    : (cleanBaseUrl || "segundona-fc.onrender.com");
 
   const escHtml = (value = "") =>
     String(value)
@@ -122,10 +126,29 @@
     return best.lines;
   };
 
+  const normalizeTeamColor = (value = "") => {
+    const raw = String(value || "").toLowerCase();
+    if (raw.includes("amarelo") || raw.includes("#facc15")) return "Amarelo";
+    if (raw.includes("vermelho") || raw.includes("#ef4444")) return "Vermelho";
+    if (raw.includes("azul") || raw.includes("#3b82f6")) return "Azul";
+    if (raw.includes("preto") || raw.includes("#18181b") || raw.includes("#111827")) return "Preto";
+    if (raw.includes("branco") || raw.includes("#e5e7eb")) return "Branco";
+    return "";
+  };
+
   const teamDisplayName = (team = {}) => {
     const color = String(team.colorName || "").replace(/\s+/g, " ").trim();
+    const normalizedColor = normalizeTeamColor(color || team.colorValue || team.name);
+    const configuredName = safeBrand.teamNamesByColor && normalizedColor
+      ? safeBrand.teamNamesByColor[normalizedColor]
+      : "";
+    const rawName = String(team.name || "").replace(/\s+/g, " ").trim();
+    const isGenericName = !rawName || /^time(?:\s+\d+|\s+(amarelo|vermelho|azul|preto|branco))?$/i.test(rawName);
+    if (configuredName && isGenericName) return configuredName;
+    if (rawName) return rawName;
+    if (configuredName) return configuredName;
     if (color) return `Time ${color}`;
-    return String(team.name || "Time").replace(/\s+/g, " ").trim();
+    return "Time";
   };
 
   const titleSizeFor = (lines = [], columns = 3) => {
@@ -270,12 +293,12 @@
       left: 50%;
       top: 56%;
       z-index: 0;
-      width: 840px;
-      height: 840px;
+      width: 900px;
+      height: 900px;
       object-fit: contain;
       transform: translate(-50%, -50%);
-      opacity: 0.070;
-      filter: grayscale(1) brightness(1.15) contrast(1.05);
+      opacity: 0.105;
+      filter: grayscale(0.3) brightness(1.18) contrast(1.08);
       pointer-events: none;
       user-select: none;
     }
@@ -684,8 +707,8 @@
     }
 
     body.exporting .lc-watermark {
-      opacity: 0.055;
-      filter: none;
+      opacity: 0.090;
+      filter: grayscale(0.25) brightness(1.12) contrast(1.05);
     }
   </style>
 </head>
@@ -800,7 +823,7 @@
       <% } %>
 
       <footer class="lc-footer">
-        <span><%= safeBrand.url || "segundona-fc.com" %></span>
+        <span><%= footerUrl %></span>
         <span><%= safeBrand.name || "Segundona FC" %></span>
       </footer>
     </div>

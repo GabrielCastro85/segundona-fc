@@ -26,6 +26,13 @@ const brand = {
   logoLarge: cleanPath(env.SITE_LOGO_LARGE_PATH, "/img/logo-512x512.png"),
   url: env.SITE_URL || "",
   teamPrefix: env.TEAM_LABEL_PREFIX || "Time",
+  teamNamesByColor: {
+    Amarelo: env.TEAM_NAME_AMARELO || `${env.TEAM_LABEL_PREFIX || "Time"} 1`,
+    Vermelho: env.TEAM_NAME_VERMELHO || `${env.TEAM_LABEL_PREFIX || "Time"} 2`,
+    Azul: env.TEAM_NAME_AZUL || `${env.TEAM_LABEL_PREFIX || "Time"} 3`,
+    Preto: env.TEAM_NAME_PRETO || `${env.TEAM_LABEL_PREFIX || "Time"} 4`,
+    Branco: env.TEAM_NAME_BRANCO || `${env.TEAM_LABEL_PREFIX || "Time"} 5`,
+  },
   colors: {
     primary: env.BRAND_PRIMARY || "#f5b21b",
     secondary: env.BRAND_SECONDARY || "#0b6b2a",

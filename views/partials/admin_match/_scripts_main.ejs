@@ -286,11 +286,18 @@
     }
 
     function collectTeamsFromSorter() {
+      const teamNamesByColor = <%- JSON.stringify((typeof brand !== "undefined" && brand.teamNamesByColor) ? brand.teamNamesByColor : {}) %>;
+      const teamLabelPrefix = <%- JSON.stringify((typeof brand !== "undefined" && brand.teamPrefix) ? brand.teamPrefix : "Time") %>;
+      const isGenericTeamName = (value) =>
+        /^time(?:\s+\d+|\s+(amarelo|vermelho|azul|preto|branco))?$/i.test(String(value || "").trim());
       const teams = Array.from(document.querySelectorAll("#sorterResults [data-team]"))
         .map((teamEl, index) => {
           const select = teamEl.querySelector("[data-color-select]");
           const colorName = teamEl.dataset.teamColorName || select?.selectedOptions?.[0]?.text || `Time ${index + 1}`;
-          const name = teamEl.querySelector("[data-team-name]")?.textContent?.trim() || `Time ${colorName}`;
+          const rawName = teamEl.querySelector("[data-team-name]")?.textContent?.trim() || "";
+          const name = !rawName || isGenericTeamName(rawName)
+            ? (teamNamesByColor[colorName] || `${teamLabelPrefix} ${index + 1}`)
+            : rawName;
           const players = Array.from(teamEl.querySelectorAll("[data-team-list] li[data-player-id]"))
             .map(readSorterPlayer)
             .filter(Boolean);

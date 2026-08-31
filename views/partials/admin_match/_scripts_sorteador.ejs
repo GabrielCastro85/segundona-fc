@@ -342,12 +342,16 @@
       { name: "Branco", value: "#e5e7eb" },
     ];
     const teamLabelPrefix = <%- JSON.stringify((typeof brand !== "undefined" && brand.teamPrefix) ? brand.teamPrefix : "Time") %>;
+    const teamNamesByColor = <%- JSON.stringify((typeof brand !== "undefined" && brand.teamNamesByColor) ? brand.teamNamesByColor : {}) %>;
     const sponsorNameByLabel = {
-      Amarelo: `${teamLabelPrefix} 1`,
-      Vermelho: `${teamLabelPrefix} 2`,
-      Azul: `${teamLabelPrefix} 3`,
-      Preto: `${teamLabelPrefix} 4`,
+      Amarelo: teamNamesByColor.Amarelo || `${teamLabelPrefix} 1`,
+      Vermelho: teamNamesByColor.Vermelho || `${teamLabelPrefix} 2`,
+      Azul: teamNamesByColor.Azul || `${teamLabelPrefix} 3`,
+      Preto: teamNamesByColor.Preto || `${teamLabelPrefix} 4`,
+      Branco: teamNamesByColor.Branco || `${teamLabelPrefix} 5`,
     };
+    const isGenericTeamName = (value) =>
+      /^time(?:\s+\d+|\s+(amarelo|vermelho|azul|preto|branco))?$/i.test(String(value || "").trim());
 
     function renderTeams(teams, bench) {
       const overallByPresentPlayerId = new Map(
@@ -396,7 +400,10 @@
           const power = players.reduce((sum, p) => sum + Number(p.strength || 0), 0);
           const selectedColor = t.colorName || teamColors[idx % teamColors.length].name;
           const selectedDef = teamColors.find((c) => c.name === selectedColor) || teamColors[0];
-          const sponsorName = t.name || sponsorNameByLabel[selectedDef.name] || `${teamLabelPrefix} ${idx + 1}`;
+          const rawTeamName = String(t.name || "").trim();
+          const sponsorName = !rawTeamName || isGenericTeamName(rawTeamName)
+            ? (sponsorNameByLabel[selectedDef.name] || `${teamLabelPrefix} ${idx + 1}`)
+            : rawTeamName;
           return `
             <div class="border border-horriver-border/60 rounded-xl p-3 bg-black/30" data-team="${idx}" data-team-id="${idx}" data-team-color="${selectedDef.value}" data-team-color-name="${selectedDef.name}">
               <div class="flex items-center justify-between mb-2">
@@ -970,10 +977,11 @@
           };
 
           const sponsorNames = {
-            Amarelo: `${teamLabelPrefix} 1`,
-            Vermelho: `${teamLabelPrefix} 2`,
-            Azul: `${teamLabelPrefix} 3`,
-            Preto: `${teamLabelPrefix} 4`,
+            Amarelo: teamNamesByColor.Amarelo || `${teamLabelPrefix} 1`,
+            Vermelho: teamNamesByColor.Vermelho || `${teamLabelPrefix} 2`,
+            Azul: teamNamesByColor.Azul || `${teamLabelPrefix} 3`,
+            Preto: teamNamesByColor.Preto || `${teamLabelPrefix} 4`,
+            Branco: teamNamesByColor.Branco || `${teamLabelPrefix} 5`,
           };
 
           const readPlayer = (li) => ({

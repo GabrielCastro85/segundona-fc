@@ -532,11 +532,12 @@ router.post("/matches/:id/tournament/import-from-draw", requireAdmin, async (req
       if (raw.includes("amarelo")) return "Amarelo";
       return "Preto";
     };
+    const configuredTeamNames = brand.teamNamesByColor || {};
     const sponsorNameByLabel = {
-      Amarelo: `${brand.teamPrefix} 1`,
-      Vermelho: `${brand.teamPrefix} 2`,
-      Azul: `${brand.teamPrefix} 3`,
-      Preto: `${brand.teamPrefix} 4`,
+      Amarelo: configuredTeamNames.Amarelo || `${brand.teamPrefix} 1`,
+      Vermelho: configuredTeamNames.Vermelho || `${brand.teamPrefix} 2`,
+      Azul: configuredTeamNames.Azul || `${brand.teamPrefix} 3`,
+      Preto: configuredTeamNames.Preto || `${brand.teamPrefix} 4`,
     };
     const normalizeArray = (value) => {
       if (Array.isArray(value)) return value;
