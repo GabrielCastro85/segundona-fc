@@ -29,8 +29,8 @@ const brand = {
   teamNamesByColor: {
     Amarelo: env.TEAM_NAME_AMARELO || "Matheus Fully",
     Vermelho: env.TEAM_NAME_VERMELHO || "Marmorart",
-    Azul: env.TEAM_NAME_AZUL || "Khedecon",
-    Preto: env.TEAM_NAME_PRETO || "Gripphen",
+    Azul: env.TEAM_NAME_AZUL || "Gripphen",
+    Preto: env.TEAM_NAME_PRETO || "Khedecon",
     Branco: env.TEAM_NAME_BRANCO || `${env.TEAM_LABEL_PREFIX || "Time"} 5`,
   },
   colors: {
