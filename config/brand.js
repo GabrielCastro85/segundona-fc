@@ -27,10 +27,10 @@ const brand = {
   url: env.SITE_URL || "",
   teamPrefix: env.TEAM_LABEL_PREFIX || "Time",
   teamNamesByColor: {
-    Amarelo: env.TEAM_NAME_AMARELO || `${env.TEAM_LABEL_PREFIX || "Time"} 1`,
-    Vermelho: env.TEAM_NAME_VERMELHO || `${env.TEAM_LABEL_PREFIX || "Time"} 2`,
-    Azul: env.TEAM_NAME_AZUL || `${env.TEAM_LABEL_PREFIX || "Time"} 3`,
-    Preto: env.TEAM_NAME_PRETO || `${env.TEAM_LABEL_PREFIX || "Time"} 4`,
+    Amarelo: env.TEAM_NAME_AMARELO || "Matheus Fully",
+    Vermelho: env.TEAM_NAME_VERMELHO || "Marmorart",
+    Azul: env.TEAM_NAME_AZUL || "Khedecon",
+    Preto: env.TEAM_NAME_PRETO || "Gripphen",
     Branco: env.TEAM_NAME_BRANCO || `${env.TEAM_LABEL_PREFIX || "Time"} 5`,
   },
   colors: {
