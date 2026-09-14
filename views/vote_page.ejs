@@ -43,6 +43,7 @@
                   <p class="text-[11px] text-horriver-gray">
                     Gols: <span class="text-horriver-orange"><%= player.goals %></span>
                     – Ast: <span class="text-horriver-orange"><%= player.assists %></span>
+                      – Desarmes: <span class="text-horriver-orange"><%= player.tackles || 0 %></span>
                     <% if (player.appearedInPhoto) { %> – <span title="Saiu na foto">??</span><% } %>
                   </p>
                 </div>
