@@ -384,8 +384,8 @@
           <span class="admin-section-title">Lançamento principal</span>
           <h3 class="text-2xl font-semibold text-horriver-light">Stats, foto e time vencedor em uma janela</h3>
           <p class="text-sm text-horriver-gray max-w-2xl">
-            O lançamento completo agora acontece no modal: primeiro você define a foto da home, depois preenche gols
-            e assistências separados pelos times do sorteio. As notas aparecem somente como resultado da votação.
+            O lançamento completo agora acontece no modal: primeiro você define a foto da home, depois preenche gols,
+            assistências e desarmes separados pelos times do sorteio. As notas aparecem somente como resultado da votação.
           </p>
         </div>
         <button
@@ -465,7 +465,7 @@
                       <%= player.position %><% if (player.nickname) { %> - <%= player.nickname %><% } %>
                     </p>
                   </div>
-                  <div class="grid <%= isGoalkeeper ? 'grid-cols-3 sm:grid-cols-6 md:min-w-[500px]' : 'grid-cols-3 sm:grid-cols-5 md:min-w-[430px]' %> gap-2 text-center text-[11px]">
+                  <div class="grid <%= isGoalkeeper ? 'grid-cols-3 sm:grid-cols-7 md:min-w-[560px]' : 'grid-cols-3 sm:grid-cols-6 md:min-w-[500px]' %> gap-2 text-center text-[11px]">
                     <div class="rounded-xl border border-horriver-border/50 bg-black/30 px-2 py-1.5">
                       <span class="block uppercase text-horriver-gray">OVR</span>
                       <strong class="mt-0.5 block text-horriver-orange"><%= player.overall != null ? player.overall : "-" %></strong>
@@ -477,6 +477,10 @@
                     <div class="rounded-xl border border-horriver-border/50 bg-black/30 px-2 py-1.5">
                       <span class="block uppercase text-horriver-gray">Assist.</span>
                       <strong class="mt-0.5 block text-horriver-light"><%= stat && stat.assists != null ? stat.assists : 0 %></strong>
+                    </div>
+                    <div class="rounded-xl border border-horriver-border/50 bg-black/30 px-2 py-1.5">
+                      <span class="block uppercase text-horriver-gray">Desarmes</span>
+                      <strong class="mt-0.5 block text-horriver-light"><%= stat && stat.tackles != null ? stat.tackles : 0 %></strong>
                     </div>
                     <% if (isGoalkeeper) { %>
                       <div class="rounded-xl border border-horriver-border/50 bg-black/30 px-2 py-1.5">
@@ -608,7 +612,7 @@
             <div>
               <h3 class="text-lg font-semibold text-horriver-light">Jogadores da rodada</h3>
               <p class="mt-1 text-sm text-horriver-gray">
-                Lance gols, assistências, nota e aparicao em foto apenas para quem foi confirmado.
+                Lance gols, assistências, desarmes, nota e aparicao em foto apenas para quem foi confirmado.
               </p>
             </div>
             <div class="text-xs text-horriver-gray">
@@ -649,6 +653,7 @@
                   <th class="px-3 py-3 text-center font-semibold text-horriver-gray">Presente</th>
                   <th class="px-3 py-3 text-center font-semibold text-horriver-gray">Gols</th>
                   <th class="px-3 py-3 text-center font-semibold text-horriver-gray">Assistências</th>
+                  <th class="px-3 py-3 text-center font-semibold text-horriver-gray">Desarmes</th>
                   <th class="px-3 py-3 text-center font-semibold text-horriver-gray">Nota</th>
                   <th class="px-3 py-3 text-center font-semibold text-horriver-gray">Foto</th>
                 </tr>
@@ -706,6 +711,17 @@
                       data-input-scope="desktop"
                       class="w-20 sm:w-16 bg-black/40 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs md:text-sm"
                       value="<%= stat && stat.assists != null ? stat.assists : 0 %>"
+                    />
+                  </td>
+                  <td class="px-3 py-2 text-center align-middle">
+                    <input
+                      type="number"
+                      name="tackles_<%= player.id %>"
+                      min="0"
+                      step="1"
+                      data-input-scope="desktop"
+                      class="w-20 sm:w-16 bg-black/40 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs md:text-sm"
+                      value="<%= stat && stat.tackles != null ? stat.tackles : 0 %>"
                     />
                   </td>
                   <td class="px-3 py-2 text-center align-middle">
@@ -805,6 +821,18 @@
                       data-input-scope="mobile"
                       class="w-full bg-black/20 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs"
                       value="<%= stat && stat.assists != null ? stat.assists : 0 %>"
+                    />
+                  </label>
+                  <label class="flex flex-col gap-1 rounded-xl border border-horriver-border/60 bg-black/40 px-3 py-2">
+                    <span>Desarmes</span>
+                    <input
+                      type="number"
+                      name="tackles_<%= player.id %>"
+                      min="0"
+                      step="1"
+                      data-input-scope="mobile"
+                      class="w-full bg-black/20 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs"
+                      value="<%= stat && stat.tackles != null ? stat.tackles : 0 %>"
                     />
                   </label>
 
@@ -966,6 +994,10 @@
                       <label>
                         Assist.
                         <input type="number" name="assists_<%= player.id %>" min="0" step="1" value="<%= stat && stat.assists != null ? stat.assists : 0 %>" />
+                      </label>
+                  <label>
+                        Desarmes
+                        <input type="number" name="tackles_<%= player.id %>" min="0" step="1" value="<%= stat && stat.tackles != null ? stat.tackles : 0 %>" />
                       </label>
                       <% if (isGoalkeeper) { %>
                         <label>

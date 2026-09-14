@@ -70,6 +70,7 @@ async function computeMatchRatingsAndAwards(matchId) {
       statId: stat.id,
       goals: stat.goals || 0,
       assists: stat.assists || 0,
+      tackles: stat.tackles || 0,
       saves: stat.saves,
       appearedInPhoto: !!stat.appearedInPhoto,
       votesCount: 0,
@@ -184,6 +185,7 @@ async function computeMatchRatingsAndAwards(matchId) {
 
   // Stats rating (0..10) normalized by position
   const maxGoals = Math.max(0, ...playerStats.map((s) => s.goals || 0));
+  const maxTackles = Math.max(0, ...playerStats.map((s) => s.tackles || 0));
   const maxAssists = Math.max(0, ...playerStats.map((s) => s.assists || 0));
   const recordedSaves = playerStats
     .filter((s) => normalizePosition(s.player?.position) === "GOL" && s.saves != null)
@@ -230,6 +232,13 @@ async function computeMatchRatingsAndAwards(matchId) {
     let score0to1 = goalsRel * gW + assistsRel * aW + photoBonus;
     if (posGroup === "GOL" && stat.saves != null && maxSaves > 0) {
       score0to1 += savesRel * 0.45 * savesConfidence;
+    }
+    // Preserve the historical formula when no tackles were recorded.
+    // With tackles, reserve a position-specific share of the statistical rating.
+    if (maxTackles > 0) {
+      const tackleWeight = { GOL: 0.1, ZAG: 0.35, VOL: 0.35, MEI: 0.2, ATA: 0.1, OUTRO: 0.2 }[posGroup];
+      const tacklesRel = Math.max(0, stat.tackles || 0) / maxTackles;
+      score0to1 = score0to1 * (1 - tackleWeight) + tacklesRel * tackleWeight;
     }
     if (score0to1 > 1) score0to1 = 1;
     const statsRating = Number((score0to1 * 10).toFixed(2));

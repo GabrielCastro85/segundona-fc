@@ -198,6 +198,8 @@ async function saveMatchStatsFromBody(matchId, body) {
 
     const goalsRaw = body[`goals_${playerId}`];
     const assistsRaw = body[`assists_${playerId}`];
+    const tacklesValue = Number(body[`tackles_${playerId}`] ?? 0);
+    let tackles = Number.isInteger(tacklesValue) && tacklesValue >= 0 && tacklesValue <= 2147483647 ? tacklesValue : 0;
     const savesRaw = body[`saves_${playerId}`];
     const hasSavesField = Object.prototype.hasOwnProperty.call(body, `saves_${playerId}`);
     const hasRatingField = Object.prototype.hasOwnProperty.call(body, `rating_${playerId}`);
@@ -225,6 +227,7 @@ async function saveMatchStatsFromBody(matchId, body) {
     if (!present) {
       goals = 0;
       assists = 0;
+      tackles = 0;
       saves = null;
       rating = null;
       appearedInPhoto = false;
@@ -233,7 +236,7 @@ async function saveMatchStatsFromBody(matchId, body) {
     }
 
     const hasAnyData =
-      present || goals > 0 || assists > 0 || saves !== null || rating !== null || appearedInPhoto;
+      present || goals > 0 || assists > 0 || tackles > 0 || saves !== null || rating !== null || appearedInPhoto;
 
     const existing = statsByPlayerId.get(playerId);
 
@@ -253,6 +256,7 @@ async function saveMatchStatsFromBody(matchId, body) {
           present,
           goals,
           assists,
+          tackles,
           saves,
           rating,
           appearedInPhoto,
@@ -266,6 +270,7 @@ async function saveMatchStatsFromBody(matchId, body) {
           present,
           goals,
           assists,
+          tackles,
           saves,
           rating,
           appearedInPhoto,
@@ -1641,37 +1646,15 @@ router.post("/matches/:id/apply-votes", requireAdmin, async (req, res) => {
       return res.redirect(`/admin/matches/${matchId}?error=noPresentPlayers`);
     }
 
-    const ratingMap = new Map();
-    ballots.forEach((b) => {
-      (b.ratings || []).forEach((r) => {
-        if (!ratingMap.has(r.playerId)) ratingMap.set(r.playerId, { sum: 0, count: 0 });
-        const entry = ratingMap.get(r.playerId);
-        entry.sum += r.rating;
-        entry.count += 1;
-      });
-    });
-
+    const result = await computeMatchRatingsAndAwards(matchId);
+    if (result.error) return res.redirect(`/admin/matches/${matchId}?error=noStats`);
     const updates = [];
-    stats.forEach((stat) => {
-      const entry = ratingMap.get(stat.playerId);
-      if (!entry || entry.count === 0) return;
-      const avg = entry.sum / entry.count;
-      const voteRating = Math.max(0, Math.min(10, avg * 2));
-      const manualRating =
-        stat.rating != null && !Number.isNaN(Number(stat.rating))
-          ? Number(stat.rating)
-          : null;
-      const combined =
-        manualRating != null
-          ? voteRating * 0.7 + manualRating * 0.3
-          : voteRating;
-      const finalRating = Math.max(0, Math.min(10, combined));
-      updates.push(
-        prisma.playerStat.update({
-          where: { id: stat.id },
-          data: { rating: Number(finalRating.toFixed(2)) },
-        })
-      );
+    result.scores.forEach((score) => {
+      if (!score.votesCount) return;
+      updates.push(prisma.playerStat.update({
+        where: { id: score.statId },
+        data: { rating: score.finalRating },
+      }));
     });
 
     if (!updates.length) {

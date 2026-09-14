@@ -151,6 +151,7 @@ async function loadContext(tokenValue) {
       playerId: true,
       goals: true,
       assists: true,
+      tackles: true,
       saves: true,
       appearedInPhoto: true,
       player: {
@@ -183,6 +184,7 @@ async function loadContext(tokenValue) {
       photoUrl: s.player.photoUrl || null,
       goals: s.goals || 0,
       assists: s.assists || 0,
+      tackles: s.tackles || 0,
       saves: s.saves,
       rating: s.rating,
       appearedInPhoto: !!s.appearedInPhoto,
@@ -202,6 +204,7 @@ async function loadContext(tokenValue) {
     photoUrl: guest.photoUrl || null,
     goals: 0,
     assists: 0,
+    tackles: 0,
     saves: null,
     rating: null,
     appearedInPhoto: false,
@@ -396,6 +399,7 @@ async function loadPublicVoteContext(matchId, token) {
       playerId: true,
       goals: true,
       assists: true,
+      tackles: true,
       rating: true,
       appearedInPhoto: true,
       player: {
@@ -431,6 +435,7 @@ async function loadPublicVoteContext(matchId, token) {
       positionLabel: label,
       goals: s.goals || 0,
       assists: s.assists || 0,
+      tackles: s.tackles || 0,
       rating: s.rating,
       appearedInPhoto: !!s.appearedInPhoto,
     };
