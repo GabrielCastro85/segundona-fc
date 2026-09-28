@@ -6,23 +6,10 @@ const { resolveOverallScore } = require("../utils/overall");
 const { getDynamicOverallSnapshot } = require("../utils/live_overall");
 const { computeMatchRatingsAndAwards } = require("../utils/match_ratings");
 
-const cache = new Map();
+const { getCache: getPageCache, setCache } = require("../utils/page_cache");
 const CACHE_TTL_MS = 60 * 1000;
 const RANKINGS_RATING_CONCURRENCY = 6;
-
-function getCache(key) {
-  const entry = cache.get(key);
-  if (!entry) return null;
-  if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
-    cache.delete(key);
-    return null;
-  }
-  return entry.value;
-}
-
-function setCache(key, value) {
-  cache.set(key, { value, timestamp: Date.now() });
-}
+const getCache = (key) => getPageCache(key, CACHE_TTL_MS);
 
 function getSaoPauloMonthYear(date = new Date()) {
   const parts = new Intl.DateTimeFormat("en-CA", {

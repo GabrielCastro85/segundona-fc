@@ -70,10 +70,9 @@ async function decoratePlayersWithLineup(matchId, players) {
     orderBy: { createdAt: "desc" },
   });
 
-  const playerById = new Map(players.map((player) => [String(player.id), player]));
-  players.forEach((player) => {
-    if (player.lineupKey) playerById.set(String(player.lineupKey), player);
-  });
+  const playerById = new Map(players.filter((player) => !player.isGuest).map((player) => [String(player.id), player]));
+  const guestByKey = new Map(players.filter((player) => player.isGuest && player.lineupKey)
+    .map((player) => [String(player.lineupKey), player]));
   const ordered = [];
   const included = new Set();
 
@@ -83,12 +82,16 @@ async function decoratePlayersWithLineup(matchId, players) {
       const theme = TEAM_COLOR_THEMES[colorName] || TEAM_COLOR_THEMES.Laranja;
       const teamName = displayTeamName(team, colorName);
       const teamPlayers = (Array.isArray(team?.players) ? team.players : [])
-        .map((entry) => playerById.get(String(entry?.id)))
+        .map((entry) => {
+          const key = String(entry?.lineupKey || entry?.id);
+          const isGuest = entry?.guest || entry?.isGuest || key.startsWith("guest-");
+          return isGuest ? guestByKey.get(key) : playerById.get(key);
+        })
         .filter(Boolean)
         .sort((a, b) => positionRank(a.position) - positionRank(b.position) || a.name.localeCompare(b.name, "pt-BR"));
 
       teamPlayers.forEach((player) => {
-        included.add(String(player.id));
+        included.add(player.voteKey || `${player.isGuest ? "guest" : "player"}:${player.id}`);
         ordered.push({
           ...player,
           teamName,
@@ -102,7 +105,7 @@ async function decoratePlayersWithLineup(matchId, players) {
 
   const fallbackTheme = TEAM_COLOR_THEMES.Laranja;
   const extras = players
-    .filter((player) => !included.has(String(player.id)))
+    .filter((player) => !included.has(player.voteKey || `${player.isGuest ? "guest" : "player"}:${player.id}`))
     .sort((a, b) => positionRank(a.position) - positionRank(b.position) || a.name.localeCompare(b.name, "pt-BR"))
     .map((player) => ({
       ...player,
@@ -152,6 +155,7 @@ async function loadContext(tokenValue) {
       goals: true,
       assists: true,
       tackles: true,
+      ownGoals: true,
       saves: true,
       appearedInPhoto: true,
       player: {
@@ -185,6 +189,7 @@ async function loadContext(tokenValue) {
       goals: s.goals || 0,
       assists: s.assists || 0,
       tackles: s.tackles || 0,
+      ownGoals: s.ownGoals || 0,
       saves: s.saves,
       rating: s.rating,
       appearedInPhoto: !!s.appearedInPhoto,
@@ -200,11 +205,12 @@ async function loadContext(tokenValue) {
     name: guest.name,
     nickname: guest.nickname,
     position: guest.position,
-    positionLabel: normalizePositionGroup(guest.position),
+    positionLabel: ({ GOL: "Goleiro", ZAG: "Zagueiro", MEI: "Meia", ATA: "Atacante" })[normalizePositionGroup(guest.position)] || "Outros",
     photoUrl: guest.photoUrl || null,
     goals: 0,
     assists: 0,
     tackles: 0,
+    ownGoals: 0,
     saves: null,
     rating: null,
     appearedInPhoto: false,
@@ -400,6 +406,7 @@ async function loadPublicVoteContext(matchId, token) {
       goals: true,
       assists: true,
       tackles: true,
+      ownGoals: true,
       rating: true,
       appearedInPhoto: true,
       player: {
@@ -436,6 +443,7 @@ async function loadPublicVoteContext(matchId, token) {
       goals: s.goals || 0,
       assists: s.assists || 0,
       tackles: s.tackles || 0,
+      ownGoals: s.ownGoals || 0,
       rating: s.rating,
       appearedInPhoto: !!s.appearedInPhoto,
     };

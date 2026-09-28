@@ -36,8 +36,8 @@ test('server ignores injected presence for an absent player in the stats wizard'
  const source='async '+extract(read('routes/admin/matches.js'),'saveMatchStatsFromBody');
  const context={prisma,isGoalkeeperPosition:()=>false,clearCache:()=>{},recomputeTotalsForPlayers:async()=>{},recalculateOverallForAllPlayers:async()=>{},updateAllPlayersOverallAfterMatch:async()=>{},ensureFinanceSettings:async()=>({})};
  vm.runInNewContext(source+';this.save=saveMatchStatsFromBody;',context);
- await context.save(1,{present_1:'on',present_2:'on',photo_1:'on',goals_2:'3'},{confirmedOnly:true});
- assert.equal(creates.length,0);assert.equal(updates.length,1);assert.equal(updates[0].data.rating,8);assert.equal(updates[0].data.appearedInPhoto,true);
+ await context.save(1,{present_1:'on',present_2:'on',photo_1:'on',ownGoals_1:'2',goals_2:'3'},{confirmedOnly:true});
+ assert.equal(creates.length,0);assert.equal(updates.length,1);assert.equal(updates[0].data.rating,8);assert.equal(updates[0].data.appearedInPhoto,true);assert.equal(updates[0].data.ownGoals,2);
 });
 test('weekly image survives deletion of its temporary upload', async () => {
  const sharp=require('sharp'),os=require('node:os');

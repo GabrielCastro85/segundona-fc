@@ -200,8 +200,10 @@ async function saveMatchStatsFromBody(matchId, body, { confirmedOnly = false } =
 
     const goalsRaw = body[`goals_${playerId}`];
     const assistsRaw = body[`assists_${playerId}`];
-    const tacklesValue = Number(body[`tackles_${playerId}`] ?? 0);
+    const tacklesRaw = body[`tackles_${playerId}`];
+    const tacklesValue = Number(tacklesRaw ?? 0);
     let tackles = Number.isInteger(tacklesValue) && tacklesValue >= 0 && tacklesValue <= 2147483647 ? tacklesValue : 0;
+    const ownGoalsRaw = body[`ownGoals_${playerId}`];
     const savesRaw = body[`saves_${playerId}`];
     const hasSavesField = Object.prototype.hasOwnProperty.call(body, `saves_${playerId}`);
     const hasRatingField = Object.prototype.hasOwnProperty.call(body, `rating_${playerId}`);
@@ -210,7 +212,9 @@ async function saveMatchStatsFromBody(matchId, body, { confirmedOnly = false } =
 
     let goals = goalsRaw ? parseInt(goalsRaw, 10) || 0 : 0;
     let assists = assistsRaw ? parseInt(assistsRaw, 10) || 0 : 0;
+    let ownGoals = ownGoalsRaw ? parseInt(ownGoalsRaw, 10) || 0 : 0;
     let saves = null;
+    ownGoals = Math.max(0, ownGoals);
     if (isGoalkeeperPosition(player.position) && hasSavesField && String(savesRaw ?? "").trim() !== "") {
       saves = Math.max(0, parseInt(savesRaw, 10) || 0);
     }
@@ -230,6 +234,7 @@ async function saveMatchStatsFromBody(matchId, body, { confirmedOnly = false } =
       goals = 0;
       assists = 0;
       tackles = 0;
+      ownGoals = 0;
       saves = null;
       rating = null;
       appearedInPhoto = false;
@@ -238,7 +243,7 @@ async function saveMatchStatsFromBody(matchId, body, { confirmedOnly = false } =
     }
 
     const hasAnyData =
-      present || goals > 0 || assists > 0 || tackles > 0 || saves !== null || rating !== null || appearedInPhoto;
+      present || goals > 0 || assists > 0 || tackles > 0 || ownGoals > 0 || saves !== null || rating !== null || appearedInPhoto;
 
     const existing = statsByPlayerId.get(playerId);
 
@@ -259,6 +264,7 @@ async function saveMatchStatsFromBody(matchId, body, { confirmedOnly = false } =
           goals,
           assists,
           tackles,
+          ownGoals,
           saves,
           rating,
           appearedInPhoto,
@@ -273,6 +279,7 @@ async function saveMatchStatsFromBody(matchId, body, { confirmedOnly = false } =
           goals,
           assists,
           tackles,
+          ownGoals,
           saves,
           rating,
           appearedInPhoto,
@@ -415,7 +422,7 @@ router.post("/matches", requireAdmin, async (req, res) => {
 router.post("/matches/:id/edit", requireAdmin, async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const { playedAt, playedDate, playedTime, description, winnerTeam, winnerColor } = req.body;
+    const { playedAt, playedDate, playedTime, description, winnerTeam, winnerColor, returnTo } = req.body;
 
     const playedDateValue = parsePlayedAt({ playedAt, playedDate, playedTime });
     if (Number.isNaN(id) || !playedDateValue) {
@@ -432,7 +439,8 @@ router.post("/matches/:id/edit", requireAdmin, async (req, res) => {
       },
     });
 
-    res.redirect("/admin");
+    clearCache();
+    res.redirect(returnTo === "match" ? `/admin/matches/${id}?matchEdited=true` : "/admin?matchEdited=true");
   } catch (err) {
     console.error("Erro ao editar pelada:", err);
     res.redirect("/admin");
@@ -954,6 +962,7 @@ router.post("/matches/:id/delete", requireAdmin, async (req, res) => {
       return res.redirect("/admin");
     }
 
+    const affectedStats = await prisma.playerStat.findMany({ where: { matchId: id }, select: { playerId: true } });
     const voteSessions = await prisma.voteSession.findMany({
       where: { matchId: id },
       select: { id: true },
@@ -1063,8 +1072,9 @@ router.post("/matches/:id/delete", requireAdmin, async (req, res) => {
 
       prisma.lineupDraw.deleteMany({ where: { matchId: id } }),
 
-      prisma.weeklyAward.deleteMany({
+      prisma.weeklyAward.updateMany({
         where: { winningMatchId: id },
+        data: { winningMatchId: null },
       }),
 
       prisma.playerStat.deleteMany({
@@ -1076,6 +1086,9 @@ router.post("/matches/:id/delete", requireAdmin, async (req, res) => {
       }),
     ]);
 
+    await recomputeTotalsForPlayers(affectedStats.map((stat) => stat.playerId));
+    await recalculateOverallForAllPlayers();
+    clearCache();
     return res.redirect("/admin");
   } catch (err) {
     console.error("Erro ao excluir pelada:", err);
@@ -1311,6 +1324,7 @@ router.post("/matches/:id/presence", requireAdmin, async (req, res) => {
     const touchedPlayerIds = players.map((player) => player.id);
     await recomputeTotalsForPlayers(touchedPlayerIds);
     await recalculateOverallForAllPlayers();
+    clearCache();
 
     const financeSettings = await ensureFinanceSettings();
     const matchDate = new Date(match.playedAt);
@@ -1667,6 +1681,7 @@ router.post("/matches/:id/apply-votes", requireAdmin, async (req, res) => {
     await prisma.$transaction(updates);
     await recomputeTotalsForPlayers(stats.map((stat) => stat.playerId));
     await recalculateOverallForAllPlayers();
+    clearCache();
     return res.redirect(`/admin/matches/${matchId}?applyVotes=true`);
   } catch (err) {
     console.error("Erro ao aplicar votos em notas:", err);
@@ -1958,6 +1973,7 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
           result: { teams: lineup.teams, bench: lineup.bench },
         },
       });
+      await syncMatchGuestsFromLatestLineup(matchId);
     } catch (persistErr) {
       console.error("Erro ao salvar sorteio (LineupDraw):", persistErr);
     }
@@ -1986,6 +2002,7 @@ router.post("/matches/:id/save-lineup", requireAdmin, async (req, res) => {
       name: player?.name || "Jogador",
       nickname: player?.nickname || null,
       position: player?.position || "",
+      photoUrl: player?.photoUrl || null,
       strength: Number.isFinite(Number(player?.strength)) ? Number(player.strength) : 0,
       guest: !!player?.guest,
     });

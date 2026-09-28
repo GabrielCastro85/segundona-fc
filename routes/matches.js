@@ -1,5 +1,6 @@
 // routes/matches.js
 const express = require("express");
+const { publicImageUrl } = require("../utils/public_image_url");
 const router = express.Router();
 const prisma = require("../utils/db");
 const { computeTournamentStandings } = require("../utils/tournament");
@@ -103,7 +104,7 @@ router.get("/:id", async (req, res) => {
     res.locals.metaDescription = match.description
       ? `Pelada em ${matchDateLabel}. ${match.description}`
       : `Pelada em ${matchDateLabel}.`;
-    res.locals.metaImage = `${baseUrl}${req.app.locals.thumbUrl(shareImagePath, 1200)}`;
+    res.locals.metaImage = publicImageUrl(baseUrl, shareImagePath, res.locals.brand?.logoLarge, req.app.locals.thumbUrl);
     res.locals.ogTitle = `Pelada ${matchDateLabel} | ${res.locals.brand?.name || "Segundona FC"}`;
 
     return res.render("match_public", {

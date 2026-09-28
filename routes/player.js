@@ -4,6 +4,7 @@ const { computeOverallFromEntries } = require("../utils/overall");
 const { getDynamicOverallSnapshot } = require("../utils/live_overall");
 const { evaluateAchievementsForPlayer } = require("../utils/achievements");
 
+const { publicImageUrl } = require("../utils/public_image_url");
 const router = express.Router();
 
 async function buildPlayerProfileViewModel(req, id) {
@@ -164,7 +165,7 @@ async function buildPlayerProfileViewModel(req, id) {
   const brand = req.res?.locals?.brand || req.app.locals.brand || {};
   const baseUrl = process.env.SITE_URL || `${req.protocol}://${req.get("host")}`;
   const playerImagePath = player.photoUrl || (brand.logoLarge || "/img/logo-512x512.png");
-  const playerImageUrl = `${baseUrl}${req.app.locals.thumbUrl(playerImagePath, 1200)}`;
+  const playerImageUrl = publicImageUrl(baseUrl, playerImagePath, brand.logoLarge, req.app.locals.thumbUrl);
   const descParts = [
     `Jogador ${player.name}.`,
     player.position ? `Posição ${player.position}.` : null,
