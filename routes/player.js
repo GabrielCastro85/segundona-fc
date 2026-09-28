@@ -23,10 +23,10 @@ async function buildPlayerProfileViewModel(req, id) {
   const { scoreMap: rankingOverallMap } = await getDynamicOverallSnapshot();
 
   const totals = {
-    goals: player.totalGoals || 0,
-    assists: player.totalAssists || 0,
-    matches: player.totalMatches || 0,
-    photos: player.totalPhotos || 0,
+    goals: player.stats.filter(s => s.present).reduce((sum, s) => sum + (s.goals || 0), 0),
+    assists: player.stats.filter(s => s.present).reduce((sum, s) => sum + (s.assists || 0), 0),
+    matches: player.stats.filter(s => s.present).length,
+    photos: player.stats.filter(s => s.present && s.appearedInPhoto).length,
   };
 
   const ratingsSeries = player.stats
@@ -61,6 +61,7 @@ async function buildPlayerProfileViewModel(req, id) {
       assists: s.assists,
       rating: s.rating,
       present: s.present,
+      appearedInPhoto: !!s.appearedInPhoto,
     }));
 
   const overallHistory = player.overallHistory || [];

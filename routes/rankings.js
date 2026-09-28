@@ -174,7 +174,7 @@ router.get("/", async (req, res) => {
           ) {
             const map = new Map();
             result.scores.forEach((score) => {
-              map.set(score.player.id, score.finalRating);
+              if (score.votesCount > 0) map.set(score.player.id, score.finalRating);
             });
             return { matchId, map };
           }

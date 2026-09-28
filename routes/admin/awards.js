@@ -1,7 +1,7 @@
 const express = require("express");
 const crypto = require("crypto");
 const prisma = require("../../utils/db");
-const { uploadWeeklyTeamPhoto, processUploadedImage } = require("../../utils/upload");
+const { uploadWeeklyTeamPhoto, persistWeeklyTeamPhoto } = require("../../utils/upload");
 const { deleteCache } = require("../../utils/page_cache");
 const {
   MONTHLY_VOTE_DEFAULT_CANDIDATES,
@@ -38,8 +38,7 @@ router.post(
 
       let teamPhotoUrl = null;
       if (req.file) {
-        const newFilename = await processUploadedImage(req.file.path, "weekly");
-        teamPhotoUrl = `/uploads/weekly/${newFilename}`;
+        teamPhotoUrl = await persistWeeklyTeamPhoto(req.file);
       }
 
       const existing = await prisma.weeklyAward.findFirst({

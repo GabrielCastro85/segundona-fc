@@ -10,13 +10,13 @@ const {
   decorateWeeklyVoteBallot,
   isWeeklyVoteBallotValid,
 } = require("../../helpers/weeklyVoteValidation.helper");
-const { deleteCache } = require("../../utils/page_cache");
+const { deleteCache, clearCache } = require("../../utils/page_cache");
 const { getDynamicOverallSnapshot } = require("../../utils/live_overall");
 const {
   persistWeeklySelection,
   syncMatchGuestsFromLatestLineup,
 } = require("../../utils/weekly_selection");
-const { uploadWeeklyTeamPhoto } = require("../../utils/upload");
+const { uploadWeeklyTeamPhoto, persistWeeklyTeamPhoto } = require("../../utils/upload");
 const { formatDateBR } = require("../../utils/finance");
 const brand = require("../../config/brand");
 const router = express.Router();
@@ -167,7 +167,7 @@ function isGoalkeeperPosition(position) {
   return value.includes("gol") || value.includes("goleir") || value.includes("goal");
 }
 
-async function saveMatchStatsFromBody(matchId, body) {
+async function saveMatchStatsFromBody(matchId, body, { confirmedOnly = false } = {}) {
   const [players, existingStats, match] = await Promise.all([
     prisma.player.findMany(),
     prisma.playerStat.findMany({
@@ -192,6 +192,8 @@ async function saveMatchStatsFromBody(matchId, body) {
 
   for (const player of players) {
     const playerId = player.id;
+    // Stats entry must never turn an available/absent player into a participant.
+    if (confirmedOnly && !statsByPlayerId.get(playerId)?.present) continue;
     touchedPlayerIds.add(playerId);
 
     const present = !!body[`present_${playerId}`];
@@ -279,6 +281,7 @@ async function saveMatchStatsFromBody(matchId, body) {
     }
   }
 
+  clearCache();
   await recomputeTotalsForPlayers(Array.from(touchedPlayerIds));
   await recalculateOverallForAllPlayers();
   await updateAllPlayersOverallAfterMatch(matchId);
@@ -2217,7 +2220,7 @@ router.post(
         return res.redirect("/admin");
       }
 
-      const result = await saveMatchStatsFromBody(matchId, req.body);
+      const result = await saveMatchStatsFromBody(matchId, req.body, { confirmedOnly: true });
       if (result.error || !result.match) {
         return res.redirect("/admin");
       }
@@ -2225,7 +2228,7 @@ router.post(
       const skipWeeklyPhoto = req.body.skipWeeklyPhoto === "1";
       if (!skipWeeklyPhoto) {
         const weekStart = getWeekStart(result.match.playedAt);
-        const photoUrl = req.file ? `/uploads/weekly/${req.file.filename}` : null;
+        const photoUrl = await persistWeeklyTeamPhoto(req.file);
         const existing = await prisma.weeklyAward.findFirst({ where: { weekStart } });
 
         if (existing) {

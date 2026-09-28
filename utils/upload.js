@@ -76,7 +76,21 @@ async function processUploadedImage(filePath, type) {
   return path.basename(outPath);
 }
 
+// Store weekly photos in the database, just like player photos, so deploys
+// and ephemeral hosting restarts cannot remove the only copy.
+async function persistWeeklyTeamPhoto(file) {
+  if (!file?.path) return null;
+  const sharp = require("sharp");
+  const buffer = await sharp(file.path)
+    .rotate()
+    .resize(1280, 720, { fit: "inside", withoutEnlargement: true })
+    .jpeg({ quality: 85 })
+    .toBuffer();
+  return `data:image/jpeg;base64,${buffer.toString("base64")}`;
+}
+
 module.exports = {
+  persistWeeklyTeamPhoto,
   uploadPlayerPhoto,
   uploadWeeklyTeamPhoto,
   processUploadedImage,

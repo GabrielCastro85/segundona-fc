@@ -162,7 +162,7 @@
         if (!match) return;
         const [, key, playerId] = match;
         values[playerId] = values[playerId] || {};
-        values[playerId][key] = field.type === "checkbox" ? field.checked : field.value;
+        values[playerId][key] = field.disabled ? false : field.type === "checkbox" ? field.checked : field.value;
       });
       form.querySelectorAll("[data-rating-player-id]").forEach((field) => {
         const playerId = field.getAttribute("data-rating-player-id");
@@ -330,12 +330,14 @@
 
     function syncStatsTeamsFromSorter() {
       if (!statsTeamGrid) return;
-      const teams = collectTeamsFromSorter();
+      const valuesByPlayer = getStatsFieldValues();
+      const teams = collectTeamsFromSorter()
+        .map((team) => ({ ...team, players: team.players.filter((player) => valuesByPlayer[player.id]?.present) }))
+        .filter((team) => team.players.length);
       if (!teams.length) {
         setupTeamPhotoToggles();
         return;
       }
-      const valuesByPlayer = getStatsFieldValues();
       statsTeamGrid.innerHTML = teams.map((team) => buildStatsTeamCard(team, valuesByPlayer)).join("");
       statsTeamGrid.dataset.lineupSource = "sorter";
       setupTeamPhotoToggles();
@@ -355,19 +357,21 @@
             field.disabled = !toggle.checked;
             field.value = toggle.checked ? "on" : "";
           });
-          dialog.querySelectorAll(".stats-team-card").forEach((otherCard) => {
-            if (otherCard === card) return;
-            otherCard.querySelectorAll("[data-team-photo-field]").forEach((field) => {
-              field.disabled = true;
-              field.value = "";
+          if (toggle.checked) {
+            dialog.querySelectorAll(".stats-team-card").forEach((otherCard) => {
+              if (otherCard === card) return;
+              otherCard.querySelectorAll("[data-team-photo-field]").forEach((field) => {
+                field.disabled = true;
+                field.value = "";
+              });
             });
-          });
+          }
         };
         if (toggle.dataset.teamPhotoReady !== "1") {
           toggle.addEventListener("change", sync);
           toggle.dataset.teamPhotoReady = "1";
         }
-        sync();
+        // Initialization must preserve saved individual flags, including partial teams.
       });
     }
 

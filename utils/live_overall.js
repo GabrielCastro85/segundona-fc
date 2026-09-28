@@ -28,10 +28,10 @@ async function buildFinalRatingsByMatch(matchIds) {
   const rows = await mapWithConcurrency(matchIds, DEFAULT_CONCURRENCY, async (matchId) => {
     try {
       const result = await computeMatchRatingsAndAwards(matchId);
-      if (!result.error && result.scores && typeof result.scores.forEach === "function") {
+      if (!result.error && result.publicVotes?.length && result.scores && typeof result.scores.forEach === "function") {
         const map = new Map();
         result.scores.forEach((score) => {
-          map.set(score.player.id, score.finalRating);
+          if (score.votesCount > 0) map.set(score.player.id, score.finalRating);
         });
         return { matchId, map };
       }
